@@ -115,7 +115,7 @@ File('navier_stokes_cylinder/cylinder.xml.gz') << mesh
 
 # Create progress bar
 #progress = Progress('Time-stepping')
-#set_log_level(3)
+set_log_level(3)
 
 #create vtk file
 #vtkfile1 = File('navier_stokes_cylinder/velocity.pvd')
