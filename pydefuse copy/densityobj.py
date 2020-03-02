@@ -33,7 +33,6 @@ class DensityWeakForm(object):
         self.lapln = div(grad(n))
         self.gradv = v.dx(0)
 
-
 class DensityRadialWeakForm(object):
     
     def __init__(self,n,v):

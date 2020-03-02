@@ -15,7 +15,7 @@
 #
 #    You should have received a copy of the GNU Affero General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
+from __future__ import print_function
 import math
 import numpy, pylab
 from pydefuse.chronicle import chronicle
@@ -106,9 +106,9 @@ class OfdftRadial(object):
         timer.start("Initialize system")
         self.felr = feradial.FeRadialLattice(self.rs, self.params)
 
-        print "Gridpoints:",self.felr.num_vertices,"range:",self.felr.grid_start,"-",self.felr.grid_end
-        print "Atom:", self.Z
-        print "Volume:",self.felr.vol
+        #print "Gridpoints:",self.felr.num_vertices,"range:",self.felr.grid_start,"-",self.felr.grid_end
+        #print "Atom:", self.Z
+        #print "Volume:",self.felr.vol
         print "Number of electrons in system:",self.N
                 
         timer.stop()
