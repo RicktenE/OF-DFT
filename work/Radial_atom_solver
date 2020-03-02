@@ -16,7 +16,7 @@ Description: This program takes as input the DFT equations and gives
 ----------------------------------------------------------------------------------------------
 """
 from __future__ import print_function
-from math import *
+import math
 
 from fenics import *
 from matplotlib import pyplot as plt
@@ -24,24 +24,28 @@ from matplotlib import pyplot as plt
 plt.close()
 """-------------------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------------------- 
-                    Creating the mesh 
+                    Creating the mesh and defining trial and test functions
 ----------------------------------------------------------------------------------------------
 -------------------------------------------------------------------------------------------""" 
 # Create mesh and define function space
 mesh = UnitIntervalMesh(20) # Splits up the interval [0,1] in (n) elements 
 V = FunctionSpace(mesh, 'P', 1) # P stands for lagrangian elemnts, number stands for degree
 
+# Define trial and test functions
+n = Function(V) # Function and not a Trial function due to nonlinearity
+v = TestFunction(V)
+
 """-------------------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------------------- 
-                    Defning external potential v[r] and Initial density n_1[r] 
+                    Defning external potential v[r] and Initial density n_1[r]
 ----------------------------------------------------------------------------------------------
 -------------------------------------------------------------------------------------------"""
 #External potential v_e[r] is analytically described for atoms
-#charge of atom in Hatree Units (Hydrogen = 1)
-v_e = Expression('-Z/x[0]', Z=1, degree=1)
+#(Hydrogen = 1)
+Ex = Expression('-Z/x[0]', Z=1.602E-16, degree=1)
 
 #Initial density n_1[r]
-n_1 = Expression('1/sqrt(2*pi)*exp(-(1/a)*pow(((x[0])), 2))', degree=2, a=2)
+n_i = Expression('a*exp(pow(((x[0])), 2))', degree=2, a=1/sqrt(2*pi))
 
 
 """-------------------------------------------------------------------------------------------
@@ -81,12 +85,25 @@ bcs = [bc_L, bc_R]
                     Defining and solving the variational problem
 ----------------------------------------------------------------------------------------------
 -------------------------------------------------------------------------------------------"""
-# Define variational problem
-n = TrialFunction(V)
-v = TestFunction(V)
-F = v_e*n*dx + n*dx
+#Thomas Fermi Energy Functional
+C_kin = 3/10*pow((3*pow(math.pi, 2)),(2/3))
+TF_KE = C_kin*pow(n,(5/3))
+#Thomas Fermi Energy functional derived towards n 
+TF_KE_der = 0.5*pow((3*pow(math.pi, 2)),(2/3))*pow(n,(3/2))
 
-a, L = lhs(F), rhs(F)
+#integral form coulomb potential
+    #### n_1 = Expression('n+tol')
+    #### Cp = Expression('(n*n_1)/tol', degree =1) # dividing by x[0] of n and x[0] of n_1 is not possible. 
+Cp_der = 4*math.pi*n
+
+#integral form external potential term
+Ex_i = Ex*n
+#integral form external potential term derived towards n
+Ex_der = Ex
+
+#Defining variational problem 
+E = Ex_der*v*dx + Cp_der*dx + TF_KE_der*dx 
+a, L = lhs(E), rhs(E)
 
 # Compute solution
 n = Function(V)
@@ -98,7 +115,7 @@ solve(a == L, n, bcs)
 ----------------------------------------------------------------------------------------------
 -------------------------------------------------------------------------------------------"""
 # Save solution to file in VTK format
-vtkfile = File('work/radial_atom_solver.pvd')
+vtkfile = File('VTKfiles/radial_atom_solver.pvd')
 vtkfile << n
 
 """-------------------------------------------------------------------------------------------
@@ -106,7 +123,7 @@ vtkfile << n
                     Computing the error 
 ----------------------------------------------------------------------------------------------
 -------------------------------------------------------------------------------------------"""
-
+# There is no analytical solution to check the error
 
 """-------------------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------------
