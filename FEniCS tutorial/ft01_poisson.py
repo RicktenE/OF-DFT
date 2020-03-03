@@ -46,6 +46,7 @@ bcs = [bc_L, bc_R]
 # Define variational problem
 u = TrialFunction(V)
 v = TestFunction(V)
+
 f = Constant(-6)
 a = dot(grad(u), grad(v))*dx
 g = Expression('-4*x[1]', degree=1) 

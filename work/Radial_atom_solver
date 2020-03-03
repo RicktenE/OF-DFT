@@ -24,16 +24,12 @@ from matplotlib import pyplot as plt
 plt.close()
 """-------------------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------------------- 
-                    Creating the mesh and defining trial and test functions
+                    Creating the mesh 
 ----------------------------------------------------------------------------------------------
 -------------------------------------------------------------------------------------------""" 
 # Create mesh and define function space
 mesh = UnitIntervalMesh(20) # Splits up the interval [0,1] in (n) elements 
 V = FunctionSpace(mesh, 'P', 1) # P stands for lagrangian elemnts, number stands for degree
-
-# Define trial and test functions
-n = Function(V) # Function and not a Trial function due to nonlinearity
-v = TestFunction(V)
 
 """-------------------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------------------- 
@@ -42,11 +38,11 @@ v = TestFunction(V)
 -------------------------------------------------------------------------------------------"""
 #External potential v_e[r] is analytically described for atoms
 #(Hydrogen = 1)
-Ex = Expression('-Z/x[0]', Z=1.602E-16, degree=1)
+Ex = Expression('-Z/x[0]', Z=1.602E-19, degree=1)
 
 #Initial density n_1[r]
-n_i = Expression('a*exp(pow(((x[0])), 2))', degree=2, a=1/sqrt(2*pi))
-
+n_i = Expression('a*exp(pow((-b*(x[0])), 2))', degree=2, a=1/sqrt(2*pi),b=1)
+#n_i = Constant(10)
 
 """-------------------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------------------- 
@@ -65,13 +61,13 @@ def boundary_R(x, on_boundary):
     return on_boundary and near(x[0], 1, tol)
 
 #defining expression on left boundary
-n_L = Expression('0', degree=2) 
+n_L = Expression('1', degree=2)         #Eq. 5,189
 
 #Define left boundary
 bc_L = DirichletBC(V, n_L, boundary_L)  
 
 #defining expression on right boundary
-n_R = Expression('0', degree=1)
+n_R = Expression('0', degree=1)         # Eq. 5,190
 
 #Define right boundary
 bc_R = DirichletBC(V, n_R, boundary_R) 
@@ -83,28 +79,53 @@ bcs = [bc_L, bc_R]
 """-------------------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------------
                     Defining and solving the variational problem
+                    defining trial and test functions
 ----------------------------------------------------------------------------------------------
 -------------------------------------------------------------------------------------------"""
 #Thomas Fermi Energy Functional
-C_kin = 3/10*pow((3*pow(math.pi, 2)),(2/3))
-TF_KE = C_kin*pow(n,(5/3))
+#C_kin = 3/10*pow((3*pow(math.pi, 2)),(2/3))
+#TF_KE = C_kin*pow(n,(5/3))
 #Thomas Fermi Energy functional derived towards n 
-TF_KE_der = 0.5*pow((3*pow(math.pi, 2)),(2/3))*pow(n,(3/2))
+#TF_KE_der = 0.5*pow((3*pow(math.pi, 2)),(2/3))*pow(n,(3/2))
 
 #integral form coulomb potential
     #### n_1 = Expression('n+tol')
     #### Cp = Expression('(n*n_1)/tol', degree =1) # dividing by x[0] of n and x[0] of n_1 is not possible. 
-Cp_der = 4*math.pi*n
+#Cp_der = 4*math.pi*n
 
-#integral form external potential term
-Ex_i = Ex*n
-#integral form external potential term derived towards n
-Ex_der = Ex
 
-#Defining variational problem 
-E = Ex_der*v*dx + Cp_der*dx + TF_KE_der*dx 
-a, L = lhs(E), rhs(E)
+'''-----------------------------------------------------'''
+# e = 1.60217662E-19
+# h_bar = 1.0545718E-34
+# m_e = 9.109E-31
+# Beta = 8*sqrt(2)/(3*math.pi)
+# Alpha = (-4)*pow(e,2)/(3*math.pi)
+# Conv = pow(sqrt(2*m_e/pow(h_bar, 2)),3)
+# Alpha = Alpha*Conv
 
+# # Define trial and test functions
+# n = Function(V)    # Function and not a Trial function due to nonlinearity
+# v = TestFunction(V)
+# mu = 1
+# #F = dot(grad(n), grad(v))*dx - Beta*(mu-Ex-n)*dx
+# F = dot(grad(n), grad(v))*dx - Alpha*(mu-Ex-n)*dx
+# a, L = lhs(F), rhs(F)
+
+'''-----------------------------------------------------'''
+# # Define trial and test functions
+# n = TrialFunction(V)    # Function and not a Trial function due to nonlinearity
+# v = TestFunction(V)
+# f = n_i
+# a = dot(grad(n), grad(v))*dx
+# L  = -4*math.pi*f*v*dx
+
+'''-----------------------------------------------------'''
+# Define trial and test functions
+n = TrialFunction(V)    # Function and not a Trial function due to nonlinearity
+v = TestFunction(V)
+f = n_i
+a = dot(grad(n), grad(v))*dx
+L = pow(sqrt(n),3) / Expression('sqrt(x[0]', degree =1)
 # Compute solution
 n = Function(V)
 solve(a == L, n, bcs)
@@ -132,7 +153,7 @@ vtkfile << n
 -------------------------------------------------------------------------------------------"""
 plt.figure()
 plot(n)
-plot(mesh)
+#plot(mesh)
 
 # show the plots
 plt.show()
