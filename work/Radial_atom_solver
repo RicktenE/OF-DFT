@@ -95,40 +95,45 @@ bcs = [bc_L, bc_R]
 
 
 '''-----------------------------------------------------'''
-# e = 1.60217662E-19
-# h_bar = 1.0545718E-34
-# m_e = 9.109E-31
-# Beta = 8*sqrt(2)/(3*math.pi)
-# Alpha = (-4)*pow(e,2)/(3*math.pi)
-# Conv = pow(sqrt(2*m_e/pow(h_bar, 2)),3)
-# Alpha = Alpha*Conv
+e = 1.60217662E-19
+h_bar = 1.0545718E-34
+m_e = 9.109E-31
+A = 8*sqrt(2)/(3*math.pi)
+B = (-4)*pow(e,2)/(3*math.pi)
+C = pow(sqrt(2*m_e/pow(h_bar, 2)),3)
+D = 1/(2*pow(math.pi, 2))
+mu = 0
 
-# # Define trial and test functions
-# n = Function(V)    # Function and not a Trial function due to nonlinearity
+# Define trial and test functions
+# u = Function(V)    # Function and not a Trial function due to nonlinearity
 # v = TestFunction(V)
-# mu = 1
-# #F = dot(grad(n), grad(v))*dx - Beta*(mu-Ex-n)*dx
-# F = dot(grad(n), grad(v))*dx - Alpha*(mu-Ex-n)*dx
-# a, L = lhs(F), rhs(F)
-
+# #F = dot(grad(u), grad(v))*dx - A*(mu-Ex-u)*dx
+# #F = dot(grad(u), grad(v))*dx - B*C*(mu-Ex-u)*dx
+# #a, L = lhs(F), rhs(F)
+# a = dot(grad(u), grad(v))*dx
+# L = -A*(mu-Ex-u)*dx
 '''-----------------------------------------------------'''
-# # Define trial and test functions
-# n = TrialFunction(V)    # Function and not a Trial function due to nonlinearity
+# # # Define trial and test functions
+# u = TrialFunction(V)    # Function and not a Trial function due to nonlinearity
 # v = TestFunction(V)
 # f = n_i
-# a = dot(grad(n), grad(v))*dx
+# a = dot(grad(u), grad(v))*dx
 # L  = -4*math.pi*f*v*dx
 
 '''-----------------------------------------------------'''
 # Define trial and test functions
-n = TrialFunction(V)    # Function and not a Trial function due to nonlinearity
-v = TestFunction(V)
-f = n_i
-a = dot(grad(n), grad(v))*dx
-L = pow(sqrt(n),3) / Expression('sqrt(x[0]', degree =1)
+# u = TrialFunction(V)    # Function and not a Trial function due to nonlinearity
+# v = TestFunction(V)
+# f = n_i
+# a = dot(grad(u), grad(v))*dx
+# L = pow(sqrt(u),3) / Expression('sqrt(x[0]', degree =1)
+
+
 # Compute solution
+u = Function(V)
+solve(a == L, u, bcs)
 n = Function(V)
-solve(a == L, n, bcs)
+n =C*D*pow(sqrt(mu-u-Ex),3)
 
 """-------------------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------------
@@ -137,7 +142,7 @@ solve(a == L, n, bcs)
 -------------------------------------------------------------------------------------------"""
 # Save solution to file in VTK format
 vtkfile = File('VTKfiles/radial_atom_solver.pvd')
-vtkfile << n
+vtkfile << u
 
 """-------------------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------------------- 
@@ -153,6 +158,8 @@ vtkfile << n
 -------------------------------------------------------------------------------------------"""
 plt.figure()
 plot(n)
+plt.figure()
+plot(u)
 #plot(mesh)
 
 # show the plots
