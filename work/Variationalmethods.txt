@@ -1,0 +1,30 @@
+# Define trial and test functions
+u = TrialFunction(V)    # Function and not a Trial function due to nonlinearity
+v = TestFunction(V)
+#F = dot(grad(u), grad(v))*dx - A*(mu-Ex-u)*dx
+#F = dot(grad(u), grad(v))*dx - B*C*(mu-Ex-u)*dx
+#a, L = lhs(F), rhs(F)
+a = dot(grad(u), grad(v))*dx
+L = -A*(mu-Ex-u)*dx
+'''-----------------------------------------------------'''
+# # # Define trial and test functions
+# u = TrialFunction(V)    
+# v = TestFunction(V)
+# f = n_i
+# a = dot(grad(u), grad(v))*dx
+# L  = -4*math.pi*f*v*dx
+
+'''-----------------------------------------------------'''
+# Define trial and test functions
+# u = TrialFunction(V)    
+# v = TestFunction(V)
+# f = n_i
+# a = dot(grad(u), grad(v))*dx
+# L = pow(sqrt(u),3) / Expression('sqrt(x[0]', degree =1)
+
+
+# Compute solution
+u = Function(V)
+solve(a == L, u, bcs)
+n = Function(V)
+n =C*D*pow(sqrt(mu-u-Ex),3)
