@@ -30,7 +30,7 @@ plt.close('all')
 -------------------------------------------------------------------------------------------""" 
 # Create mesh and define function space
 start_x = 0
-end_x = 10
+end_x = 100
 amount_vertices = 50
 mesh = IntervalMesh(amount_vertices,start_x, end_x) # Splits up the interval [0,1] in (n) elements 
 V = FunctionSpace(mesh, 'P', 1) # P stands for lagrangian elemnts, number stands for degree
@@ -115,7 +115,8 @@ u_i = interpolate(Constant(0), V)  # previous (known) u
 u = TrialFunction(V)
 v = TestFunction(V)
 a = -u.dx(0)*v.dx(0)*dx 
-L = Alpha**(3.0/2.0)*(1.0/(sqrt(r)))*(sqrt(u_i)**3)*v*dx
+L = 2*sqrt(Alpha*r)*(sqrt(u_i)**3)*v*dx
+#L = Alpha**(3.0/2.0)*(1.0/(sqrt(r)))*(sqrt(u_i)**3)*v*dx
 A,  b= assemble_system(a, L, bcs)
 u_k = Function(V)
 solve(A, u_k.vector(), b)
@@ -129,7 +130,8 @@ bcs_du = [bc_L_du, bc_R_du]
 
 #Redifine trial function and derivative of function
 du_ = TrialFunction(V)
-F  = -u_k.dx(0)*v.dx(0)*dx - Alpha**(3.0/2.0)*(1.0/(sqrt(r)))*(sqrt(u_k)**3)*v*dx
+#F  = -u_k.dx(0)*v.dx(0)*dx - Alpha**(3.0/2.0)*(1.0/(sqrt(r)))*(sqrt(u_k)**3)*v*dx
+F  = -u_k.dx(0)*v.dx(0)*dx - 2*sqrt(Alpha*r)*(sqrt(u_k)**3)*v*dx
 J = derivative(F, u_k, du_)
 
 # Start second solve
