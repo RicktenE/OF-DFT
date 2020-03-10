@@ -19,6 +19,7 @@ from __future__ import print_function
 import math
 import numpy as np
 from fenics import *
+import matplotlib as mpl
 from matplotlib import pyplot as plt
 
 
@@ -31,7 +32,7 @@ plt.close('all')
 # Create mesh and define function space
 start_x = 0
 end_x = 10
-amount_vertices = 30
+amount_vertices = 100
 mesh = IntervalMesh(amount_vertices,start_x, end_x) # Splits up the interval [0,1] in (n) elements 
 V = FunctionSpace(mesh, 'P', 1) # P stands for lagrangian elemnts, number stands for degree
 r = SpatialCoordinate(mesh)[0] # r are the x coordinates. 
@@ -104,13 +105,19 @@ bcs = [bc_L, bc_R]
 -------------------------------------------------------------------------------------------"""
 #Thomas Fermi Energy Functional
 # C_kin = 3/10*pow((3*pow(math.pi, 2)),(2/3))
-# TF_KE = C_kin*pow(u_k,(5/3))
-# #Thomas Fermi Energy functional derived towards u_k
-# TF_KE_der = 0.5*pow((3*pow(math.pi, 2)),(2/3))*pow(u_k,(3/2))
+# TF_KE = C_kin*pow(u,(5/3))
+# #Thomas Fermi Energy functional derived towards u
+# TF_KE_der = 0.5*pow((3*pow(math.pi, 2)),(2/3))*pow(u,(3/2))
 
+
+#a=1/sqrt(2*pi)
+#b=1
+#u_form = a*exp(-b*r**2)
+#u_form = Expression('a*exp(pow((-b*(x[0])), 2))', degree =1, a =1/sqrt(2*pi), b=1)
+#u = interpolate(u_form, V)
 u = TrialFunction(V)
 v = TestFunction(V)
-#F = -u.dx(0)*v.dx(0)*dx -(1.0/(sqrt(r)))*u**(3/2)*v*dx
+#F = -u.dx(0)*v.dx(0)*dx -(1.0/(sqrt(r)))*u**(3/2)*v*dx #Basic variational problem to show functionality
 F  = u.dx(0)*v.dx(0)*dx - C1*C2*(mu-Ex-u)**(2/2)*v*dx
 u_l = Function(V)
 F = action(F, u_l)
@@ -120,7 +127,7 @@ problem = NonlinearVariationalProblem(F, u_l, bcs, J)
 solver = NonlinearVariationalSolver(problem)
 
 prm = solver.parameters
-prm['newton_solver']['absolute_tolerance'] = 1E-6
+prm['newton_solver']['absolute_tolerance'] = 1E-9
 prm['newton_solver']['relative_tolerance'] = 1E-6
 prm['newton_solver']['maximum_iterations'] = 1000
 prm['newton_solver']['relaxation_parameter'] = 1.0
@@ -189,26 +196,30 @@ vtkfile << u_l
 -------------------------------------------------------------------------------------------"""
 
 
-plt.figure(1)
-plt.title("gr")
-plt.xlabel("Radial coordinate")
-plt.ylabel("projection of derivative of n towards r")
-plt.grid()
-plot(gr)
+# plt.figure(1)
+# plt.title("gr")
+# plt.xlabel("Radial coordinate")
+# plt.ylabel("projection of derivative of n towards r")
+# plt.grid()
+# plot(gr)
 
-plt.figure(2)
-plt.title("nr")
-plt.xlabel("Radial coordinate")
-plt.ylabel("projection of Z/(4.0*pi)*gr.dx(0)/r ")
-plt.grid()
-plot(nr)
+# plt.figure(2)
+# plt.title("nr")
+# plt.xlabel("Radial coordinate")
+# plt.ylabel("projection of Z/(4.0*pi)*gr.dx(0)/r ")
+# plt.grid()
+# plot(nr)
 
-plt.figure(3)
+
+plt.figure()
 plt.title("Last calculated density u_l")
 plt.xlabel("Radial coordinate")
+#mpl.scale.LogScale(r)
 plt.ylabel("Density [n]")
 plt.grid()
 plot(u_l)
+
+
 #plot(mesh)
 
 # show the plots
