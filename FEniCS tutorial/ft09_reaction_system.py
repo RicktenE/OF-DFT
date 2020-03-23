@@ -48,7 +48,7 @@ f_1 = Expression('pow(x[0]-0.1,2)+pow(x[1]-0.1,2)<0.05*0.05 ? 0.1 : 0',
 f_2 = Expression('pow(x[0]-0.1,2)+pow(x[1]-0.3,2)<0.05*0.05 ? 0.1 : 0',
                  degree=1)
 f_3 = Constant(0)
-
+0
 # Define expressions used in variational forms
 k = Constant(dt)
 K = Constant(K)
@@ -73,7 +73,7 @@ vtkfile_u_3 = File('reaction_system/u_3.pvd')
 
 # Create progress bar
 progress = Progress('Time-stepping')
-set_log_level(PROGRESS)
+set_log_level(1)
 
 # Time-stepping
 t = 0
@@ -98,7 +98,7 @@ for n in range(num_steps):
     u_n.assign(u)
 
     # Update progress bar
-    progress.update(t / T)
+    #progress.update(t / T)
 
 # Hold plot
 interactive()
