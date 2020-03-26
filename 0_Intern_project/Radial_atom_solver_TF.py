@@ -31,7 +31,7 @@ plt.close('all')
 -------------------------------------------------------------------------------------------""" 
 # Create mesh and define function space
 start_x = 0
-end_x = 10
+end_x = 2
 amount_vertices = 100
 mesh = IntervalMesh(amount_vertices,start_x, end_x) # Splits up the interval [0,1] in (n) elements 
 V = FunctionSpace(mesh, 'P', 1) # P stands for lagrangian elemnts, number stands for degree
@@ -65,7 +65,8 @@ Ex = -Z/r
 #Initial density n_1[r]
 a=1/sqrt(2*pi)
 b=1
-n_i = a*exp(pow((-b*(r)), 2))
+m_i = Constant(0)
+#n_i = a*exp(pow((-b*(r)), 2))
 #n_i = Expression('a*exp(pow((-b*(x[0])), 2))', degree =1, a =1/sqrt(2*pi), b=1)
 
 
@@ -86,7 +87,7 @@ def boundary_R(x, on_boundary):
     return on_boundary and near(x[0], end_x, tol)
 
 #defining expression on left boundary
-n_L = Expression('1', degree=1)         #Eq. 5,189
+n_L = Expression('0', degree=1)         #Eq. 5,189
 bc_L = DirichletBC(V, n_L, boundary_L)  
 
 #defining expression on right boundary

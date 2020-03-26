@@ -14,7 +14,7 @@ from __future__ import print_function
 from fenics import *
 
 T = 5.0            # final time
-num_steps = 500    # number of time steps
+num_steps = 50    # number of time steps
 dt = T / num_steps # time step size
 eps = 0.01         # diffusion coefficient
 K = 10.0           # reaction rate
@@ -43,9 +43,9 @@ u_1, u_2, u_3 = split(u)
 u_n1, u_n2, u_n3 = split(u_n)
 
 # Define source terms
-f_1 = Expression('pow(x[0]-0.1,2)+pow(x[1]-0.1,2)<0.05*0.05 ? 0.1 : 0',
+f_1 = Expression('pow(x[0]-0.1,2)+pow(x[1]-0.1,2)',
                  degree=1)
-f_2 = Expression('pow(x[0]-0.1,2)+pow(x[1]-0.3,2)<0.05*0.05 ? 0.1 : 0',
+f_2 = Expression('pow(x[0]-0.1,2)+pow(x[1]-0.3,2)',
                  degree=1)
 f_3 = Constant(0)
 0
