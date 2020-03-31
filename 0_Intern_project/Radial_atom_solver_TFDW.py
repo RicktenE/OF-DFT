@@ -206,22 +206,23 @@ prm['newton_solver']['relative_tolerance'] = 1E-6
 prm['newton_solver']['maximum_iterations'] = 1000
 prm['newton_solver']['relaxation_parameter'] = 1.0
 solver.solve()
-plotting_solve_result(u_i, False)
 
+u_i = u_i +10
+plotting_solve_result(u_i, False)
 """-----------------------------------------------------------------------"""
 
 #Solving for density with input internal potential from previous solve
 u_n = TrialFunction(V)
 v = TestFunction(V)
 
-F2 = (r*(Ex+u_i)).dx(0)*v.dx(0)*dx                                  \
+F2 = ((r*(Ex+u_i)).dx(0)*v.dx(0)*dx                                  \
     - 1/sqrt(r)*(r*(Ex+u_i)).dx(0)*v.dx(0)*dx                       \
     - 16*math.pi*r*sqrt(u_n)*v*dx                                   \
     + (r*sqrt(u_n)).dx(0)*v.dx(0)*dx                                \
     - r/sqrt(r)*sqrt(u_n)*v*dx                                      \
     - (5*C1)/(3*C3)*((r*sqrt(u_n))**(7/3))/(sqrt(r)**(5/3))*v*dx    \
     + 4/3*sqrt(r)**(7/3)*(r*sqrt(u_n))**(5/4)*v*dx                  \
-    - 1/C3*r*(mu-Ex-u_i)*v*dx 
+    - 1/C3*r*(mu-Ex-u_i)*v*dx )
 
 u_n = Function(V)
 F2 = action(F2, u_n)
@@ -235,7 +236,7 @@ solver = NonlinearVariationalSolver(problem)
 prm = solver.parameters
 prm['newton_solver']['absolute_tolerance'] = 1E-9
 prm['newton_solver']['relative_tolerance'] = 1E-6
-prm['newton_solver']['maximum_iterations'] = 100000
+prm['newton_solver']['maximum_iterations'] = 10000
 prm['newton_solver']['relaxation_parameter'] = 1.0
 
 solver.solve()
