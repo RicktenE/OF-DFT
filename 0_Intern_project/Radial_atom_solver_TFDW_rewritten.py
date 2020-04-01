@@ -18,7 +18,7 @@ Description: This program takes as input the TF equation and gives
 from __future__ import print_function
 import math
 import numpy as np
-from fenics import *
+from dolfin import *
 import matplotlib as mpl
 from matplotlib import pyplot as plt
 
@@ -118,7 +118,7 @@ class TF(object):
         return 1
 
     def potential_weakform(self,densobj):
-        return (5.0/3.0)*self.CF*pow(densobj.n,(2.0/3.0))*densobj.v
+        return (5.0/3.0)*self.CF*densobj.n**(2.0/3.0)*densobj.v
 
     def energy_weakform(self,densobj):
         return self.CF*pow(densobj.n,(5.0/3.0))*densobj.v
@@ -177,14 +177,17 @@ class Weizsacker(object):
         return ((1.0/8.0*(dot(grad(densobj.n),grad(densobj.n))/(densobj.n*densobj.n))*densobj.v+(1.0/4.0*(dot(grad(densobj.n),grad(densobj.v)))/densobj.n)))
 
     def energy_weakform(self,densobj):
-        return 1.0/8.0*inner(grad(densobj.n),grad(densobj.n))/densobj.n*densobj.v
+        return 1.0/8.0*dot(grad(densobj.n),grad(densobj.n))/densobj.n*densobj.v
     
     def potential_field(self,densobj,field):
         raise Exception("Not implemented.")
 
 func_weizsacker = Weizsacker()
 
-        
+functionals = [#TF(),\
+               Dirac(),\
+               Weizsacker()\
+               ]      
 """-------------------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------------------- 
                     Creating the mesh + Function Spaces + defining type of element
@@ -325,18 +328,18 @@ x = sqrt(r)
 y= r*sqrt(u_n)
 Q = r*(Ex+v_h)
 
-rhs = Function(V)
+
 eps = 1
 iters = 0
 maxiter = 5000
 eps2 = 2
-functionals = [Weizsacker(), TF(), Dirac()]
+
 while eps > tol and iters < maxiter:
     iters += 1 
     print('check Loop top ', iters)
-    v_hk = Function(W)
-    u_nk = Function(W)
-    #(v_hk, u_nk) = split(u_k)
+    #v_hk = Function(W)
+    #u_nk = Function(W)
+    (v_hk, u_nk) = split(u_k)
     densobj = DensityWeakForm(u_nk, pr)
     #funcpots = fucn_tf(weakdens) + func_dirac(weakdens) + func_weizsacker(weakdens)  
     funcpots = 0
