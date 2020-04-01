@@ -187,7 +187,7 @@ func_weizsacker = Weizsacker()
         
 """-------------------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------------------- 
-                    Creating the mesh + defining type of element
+                    Creating the mesh + Function Spaces + defining type of element
 ----------------------------------------------------------------------------------------------
 -------------------------------------------------------------------------------------------""" 
 # Create mesh and define function space
@@ -195,11 +195,15 @@ start_x = 0
 end_x = 2
 amount_vertices = 100
 mesh = IntervalMesh(amount_vertices,start_x, end_x) # Splits up the interval [0,1] in (n) elements 
-V = VectorFunctionSpace(mesh, 'P', 2) # P stands for lagrangian elemnts, number stands for degree
-V1 = VectorFunctionSpace(mesh, 'P', 2) # P stands for lagrangian elemnts, number stands for degree
-W = V + V1
-#W = FunctionSpace(mesh, 'P', 2)
 
+#Creation of Function Space
+V = FunctionSpace(mesh, 'P', 2) # P stands for lagrangian elemnts, number stands for degree
+
+#Creation of mixed function space with latest update FEniCS
+P1 = FiniteElement("Lagrange", mesh.ufl_cell(), 2)
+W = FunctionSpace(mesh, P1*P1)
+
+#Define radial coordinates based on mesh
 r = SpatialCoordinate(mesh)[0] # r are the x coordinates. 
 
 #Element Kr
@@ -301,13 +305,7 @@ v_h = interpolate(Constant(-1), V)
 
 mixed_test_functions = TestFunction(W)
 (vr, pr) = split(mixed_test_functions)
-#vr = TestFunction(W)
-#pr = TestFunction(W)
 
-#--Rewriting variables for overview--
-x = sqrt(r)
-y= r*sqrt(u_n)
-Q = r*(Ex+v_h)
 
 print('check 2')
 du_trial = TrialFunction(W)        
@@ -322,6 +320,11 @@ assign(u_k.sub(1), u_n)
 
 bcs_du = []
 print('check 4')
+#--Rewriting variables for overview--
+x = sqrt(r)
+y= r*sqrt(u_n)
+Q = r*(Ex+v_h)
+
 rhs = Function(V)
 eps = 1
 iters = 0
@@ -330,18 +333,18 @@ eps2 = 2
 functionals = [Weizsacker(), TF(), Dirac()]
 while eps > tol and iters < maxiter:
     iters += 1 
-    print('check Loop', iters)
+    print('check Loop top ', iters)
     v_hk = Function(W)
     u_nk = Function(W)
     #(v_hk, u_nk) = split(u_k)
-    weakdens = DensityRadialWeakForm(u_nk, pr)
+    densobj = DensityWeakForm(u_nk, pr)
     #funcpots = fucn_tf(weakdens) + func_dirac(weakdens) + func_weizsacker(weakdens)  
     funcpots = 0
     for f in functionals:
         if isinstance(f,tuple):
-            funcpots += Constant(f[0]*f[1].potential_weakform(weakdens))
+            funcpots += Constant(f[0]*f[1].potential_weakform(densobj))
         else:
-            funcpots += f.potential_weakform(weakdens)
+            funcpots += f.potential_weakform(densobj)
     
     #First coupled equation: Q'' = 1/x*Q' +16pi*y^2
     F = -Q.dx(0)*vr.dx(0)*dx                                \
