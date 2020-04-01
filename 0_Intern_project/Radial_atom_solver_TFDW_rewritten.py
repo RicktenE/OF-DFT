@@ -321,7 +321,7 @@ u_k = Function(W)
 assign(u_k.sub(0), v_h)
 assign(u_k.sub(1), u_n)
 
-bcs_du = []
+
 print('check 4')
 #--Rewriting variables for overview--
 x = sqrt(r)
@@ -337,10 +337,8 @@ eps2 = 2
 while eps > tol and iters < maxiter:
     iters += 1 
     print('check Loop top ', iters)
-    #v_hk = Function(W)
-    #u_nk = Function(W)
     (v_hk, u_nk) = split(u_k)
-    densobj = DensityWeakForm(u_nk, pr)
+    densobj = DensityRadialWeakForm(u_nk, pr)
     #funcpots = fucn_tf(weakdens) + func_dirac(weakdens) + func_weizsacker(weakdens)  
     funcpots = 0
     for f in functionals:
@@ -365,9 +363,12 @@ while eps > tol and iters < maxiter:
     J = derivative(F, u_k, du_trial)
     
     #Assemble system
-    A, b = assemble_system(J,-F, bcs_du)
-    
+    A, b = assemble_system(J, -F, bcs)
+    #A = assemble(J)
+    #b = assemble(-F)
+    #bcs.apply(A, b)
     #solve
+   
     solve(A, du.vector(), b)
     
     print('check Loop middle', iters)
