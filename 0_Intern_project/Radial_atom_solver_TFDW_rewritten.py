@@ -331,7 +331,7 @@ x = sqrt(r)
 y= r*sqrt(u_n)
 Q = r*(Ex+v_h)
 
-
+bcs_du = []
 eps = 1
 iters = 0
 maxiter = 5000
@@ -366,7 +366,7 @@ while eps > tol and iters < maxiter:
     J = derivative(F, u_k, du_trial)
     
     #Assemble system
-    A, b = assemble_system(J, -F, bcs)
+    A, b = assemble_system(J, -F, bcs_du)
     #A = assemble(J)
     #b = assemble(-F)
     #bcs.apply(A, b)
