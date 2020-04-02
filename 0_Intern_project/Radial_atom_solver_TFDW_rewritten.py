@@ -302,9 +302,12 @@ print("Number of electrons after adjustment:",intn)
 ----------------------------------------------------------------------------------------------
 -------------------------------------------------------------------------------------------"""
 print('check 1')
+
+#u_n = TrialFunction(V) #Trying out online solutions to the PETSc error code
+#v_h = TrialFunction(V)
+
 u_n = interpolate(n_i, V)
 v_h = interpolate(Constant(-1), V)
-
 
 mixed_test_functions = TestFunction(W)
 (vr, pr) = split(mixed_test_functions)
