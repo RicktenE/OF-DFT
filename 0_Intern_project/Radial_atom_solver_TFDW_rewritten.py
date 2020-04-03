@@ -124,10 +124,10 @@ class TF(object):
         return self.CF*pow(densobj.n,(5.0/3.0))*densobj.v
 
     def energy_density_field(self,densobj, field):
-        field.vector()[:] = self.CF*numpy.power(self.n.vector()[:],(5.0/3.0))
+        field.vector()[:] = self.CF*np.power(self.n.vector()[:],(5.0/3.0))
     
     def potential_field(self,densobj,field):
-        field.vector()[:] = (5.0/3.0)*self.CF*numpy.power(self.n.vector()[:],(2.0/3.0))
+        field.vector()[:] = (5.0/3.0)*self.CF*np.power(self.n.vector()[:],(2.0/3.0))
 
 func_tf = TF()
 
@@ -152,10 +152,10 @@ class Dirac(object):
         return -self.CX*pow(densobj.n,(4.0/3.0))*densobj.v
 
     def energy_density_field(self,densobj, field):
-        field.vector()[:] = -self.CX*numpy.power(self.n.vector()[:],(4.0/3.0))
+        field.vector()[:] = -self.CX*np.power(self.n.vector()[:],(4.0/3.0))
     
     def potential_field(self,densobj,field):
-        field.vector()[:] = (-4.0/3.0)*self.CX*numpy.power(self.n.vector()[:],(1.0/3.0))
+        field.vector()[:] = (-4.0/3.0)*self.CX*np.power(self.n.vector()[:],(1.0/3.0))
 
 func_dirac = Dirac()
 
@@ -200,11 +200,11 @@ amount_vertices = 100
 mesh = IntervalMesh(amount_vertices,start_x, end_x) # Splits up the interval [0,1] in (n) elements 
 
 #Creation of Function Space
-V = FunctionSpace(mesh, 'P', 2) # P stands for lagrangian elemnts, number stands for degree
+P1 = FiniteElement("P", mesh.ufl_cell(), 2)
+element = MixedElement([P1,P1])
 
-#Creation of mixed function space with latest update FEniCS
-P1 = FiniteElement("Lagrange", mesh.ufl_cell(), 2)
-W = FunctionSpace(mesh, P1*P1)
+V = FunctionSpace(mesh, 'P', 2) # P stands for lagrangian elemnts, number stands for degree
+W = FunctionSpace(mesh, element)
 
 #Define radial coordinates based on mesh
 r = SpatialCoordinate(mesh)[0] # r are the x coordinates. 
@@ -288,6 +288,7 @@ b=1
 n = Function(V)
 n_i = Constant(0)
 
+
 n = interpolate(N,V)
 intn = float(assemble((n)*dx(mesh)))
 print("Density integrated before adjustment:"+str(intn))
@@ -317,30 +318,35 @@ print('check 2')
 du_trial = TrialFunction(W)        
 du = Function(W)
 
-nlast = Function(V)
-print('check 3')
+
 
 u_k = Function(W)
 assign(u_k.sub(0), v_h)
 assign(u_k.sub(1), u_n)
 
+print('check 3')
 
-print('check 4')
-#--Rewriting variables for overview--
-x = sqrt(r)
-y= r*sqrt(u_n)
-Q = r*(Ex+v_h)
+
+
+
 
 bcs_du = []
 eps = 1
 iters = 0
 maxiter = 5000
-eps2 = 2
-
-while eps > tol and iters < maxiter:
+minimal_error = 1E-6
+print('check 4')
+while eps > minimal_error and iters < maxiter:
     iters += 1 
     print('check Loop top ', iters)
+    
     (v_hk, u_nk) = split(u_k)
+    #--Rewriting variables for overview--
+    l = sqrt(r)
+    y= r*sqrt(u_nk)
+    Q = r*(Ex+v_hk)
+    
+    
     densobj = DensityRadialWeakForm(u_nk, pr)
     #funcpots = fucn_tf(weakdens) + func_dirac(weakdens) + func_weizsacker(weakdens)  
     funcpots = 0
@@ -350,16 +356,16 @@ while eps > tol and iters < maxiter:
         else:
             funcpots += f.potential_weakform(densobj)
     
-    #First coupled equation: Q'' = 1/x*Q' +16pi*y^2
+    #First coupled equation: Q'' = 1/l*Q' +16pi*y^2
     F = -Q.dx(0)*vr.dx(0)*dx                                \
-    + 1/x*Q.dx(0)*vr.dx(0)*dx                               \
+    + 1/l*Q.dx(0)*vr.dx(0)*dx                               \
     + 16*math.pi*y*vr*dx  
     
     # Second coupled equation y'' = ... y ... x ... Q
     F = F - y.dx(0)*pr.dx(0)*dx                             \
-    + y/x*pr*dx                                             \
-    + (5*C1)/(3*C3)*(y)**(7/3)/(x)**(5/3)*pr*dx             \
-    - 4/3*(x)**(7/3)*(y)**(5/4)*pr*dx                       \
+    + y/l*pr*dx                                             \
+    + (5*C1)/(3*C3)*(y)**(7/3)/(l)**(5/3)*pr*dx             \
+    - 4/3*(l)**(7/3)*(y)**(5/4)*pr*dx                       \
     + 1/C3*Q*pr*dx  
     
     #Calculate Jacobian
@@ -367,40 +373,36 @@ while eps > tol and iters < maxiter:
     
     #Assemble system
     A, b = assemble_system(J, -F, bcs_du)
-    #A = assemble(J)
-    #b = assemble(-F)
-    #bcs.apply(A, b)
-    #solve
-   
+       
     solve(A, du.vector(), b)
     
     print('check Loop middle', iters)
-    # Conserve memory by reusing vectors for vh and n to keep dvh and dn
-    dvh = vh
-    vh = None
-    dn = n
-    n = None
-    assign(dvh, du.sub(0))
-    assign(dn, du.sub(1))
+    # Conserve memory by reusing vectors for v_h and u_n to keep dv_h and du_n
+    dv_h = v_h
+    v_h = None
+    du_n = u_n
+    u_n = None
+    assign(dv_h, du.sub(0))
+    assign(du_n, du.sub(1))
     
     #Calculate the Error
-    avg = sum(dvh.vector().array())/len(dvh.vector().array())
-    eps = numpy.linalg.norm(du.vector().array()-avg, ord=numpy.Inf)
-    print('??Iteration for self-consistency:', iters,'norm:', eps)
+    avg = sum(dv_h.vector())/len(dv_h.vector())
+    eps = np.linalg.norm(np.array(du.vector())-avg, ord=np.Inf)
+    print('Iteration for self-consistency:', iters,'norm:', eps)
     if math.isnan(eps):
             raise Exception("Residual error is NaN")
     
-    # Conserve memory by reusing vectors for n, vh also as dn, dvh
-    vh = dvh 
-    dvh = None
-    n = dn 
-    dn = None                        
-    assign(vh, u_k.sub(0))
-    assign(n, u_k.sub(1))
+    # Conserve memory by reusing vectors for u_n, v_h also as du_n, dv_h
+    v_h = dv_h 
+    dv_h = None
+    u_n = du_n 
+    du_n = None                        
+    assign(v_h, u_k.sub(0))
+    assign(u_n, u_k.sub(1))
         
     # Ad hoc negative density fix 
     omega = 1 
-    nvec = n.vector()
+    nvec = u_n.vector()
     minval = nvec.min()
     if minval <= 0.0:
         nvec[:]=nvec[:]-minval+0.1
@@ -412,16 +414,16 @@ while eps > tol and iters < maxiter:
         print("Number of electrons after correction:",intn)
     
     # Calculate v_h allignment correction 
-    vh_align = float(assemble((vh)*dx(mesh)))
+    vh_align = float(assemble((v_h)*dx(mesh)))
     mu = fake_mu - vh_align
     
-    n = n
+    u_n = u_n
     vh.vector()[:] += vh_align
     vh_align = 0.0
-    vh = vh
+    v_h = v_h
     print('check Loop End', iters)
                
-#plotting_solve_result(u_n, True)
+plotting_solve_result(u_n, True)
 
 #gr = project(u_n.dx(0),V)
 #plotting_solve_result(gr, False)

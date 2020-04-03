@@ -1,0 +1,158 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Fri Apr  3 10:16:35 2020
+
+@author: rick
+"""
+
+#---Minimal running example to reproduce the error --- 
+
+from __future__ import print_function
+import math
+import numpy as np
+from dolfin import *
+
+
+"""-------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------- 
+                    Creating the mesh + Function Spaces + defining type of element
+----------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------""" 
+# Create mesh and define function space
+start_x = 0
+end_x = 2
+amount_vertices = 100
+mesh = IntervalMesh(amount_vertices,start_x, end_x) # Splits up the interval [0,1] in (n) elements 
+
+#Creation of Function Space
+V = FunctionSpace(mesh, 'P', 2) # P stands for lagrangian elemnts, number stands for degree
+
+#Creation of mixed function space with latest update FEniCS
+P1 = FiniteElement("Lagrange", mesh.ufl_cell(), 2)
+W = FunctionSpace(mesh, P1*P1)
+
+#Define radial coordinates based on mesh
+r = SpatialCoordinate(mesh)[0] # r are the x coordinates. 
+
+#Element Kr
+Z = Constant(36) # Krypton
+N = Z # Neutral 
+
+"""-------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------- 
+                    Creating and defining the boundary conditions
+----------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------"""
+
+
+#Defining the tolerance on the boundaries 
+tol = 1E-14
+
+#Defining the left boundary
+def boundary_L(x, on_boundary):
+    return on_boundary and near(x[0], start_x, tol)
+
+#Defining the right boundary
+def boundary_R(x, on_boundary):
+    return on_boundary and near(x[0], end_x, tol)
+
+#Defining expression on left boundary
+n_L = Expression('0', degree=1)         
+bc_L = DirichletBC(V, n_L, boundary_L)  
+    
+#Defining expression on right boundary
+n_R = Expression('0', degree=1)
+bc_R = DirichletBC(V, n_R, boundary_R) 
+    
+#collecting the left and right boundary in a list for the solver to read
+bcs = [bc_L, bc_R]
+"""-------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------- 
+                    Defning external potential v[r] and Initial density n_1[r]
+----------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------"""
+#External potential v_e[r] is analytically described for atoms 
+
+Ex = -Z/r
+
+#---constants---
+lamb = 0.45
+C1 = 3/10*(3*math.pi**2)**(2/3)
+C2 = 3/4*(3/math.pi)**(1/3)
+C3 = lamb/8
+mu = 0
+
+#Initial density n_i[r]
+a=1/sqrt(2*pi)
+b=1
+#n_i = a*exp(pow((-b*(r)), 2))
+n = Function(V)
+n_i = Constant(0)
+
+n = interpolate(N,V)
+intn = float(assemble((n)*dx(mesh)))
+print("Density integrated before adjustment:"+str(intn))
+n.vector()[:] = n.vector()*N/intn  
+intn = float(assemble((n)*dx(mesh)))
+print("Number of electrons after adjustment:",intn)
+
+"""-------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------
+                    Defining and solving the variational problem
+                    defining trial and test functions
+----------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------"""
+
+u_n = interpolate(n_i, V)
+v_h = interpolate(Constant(-1), V)
+
+mixed_test_functions = TestFunction(W)
+(vr, pr) = split(mixed_test_functions)
+
+
+print('check 2')
+du_trial = TrialFunction(W)        
+du = Function(W)
+
+nlast = Function(V)
+
+
+u_k = Function(W)
+assign(u_k.sub(0), v_h)
+assign(u_k.sub(1), u_n)
+
+#--Rewriting variables for overview--
+x = sqrt(r)
+y= r*sqrt(u_n)
+Q = r*(Ex+v_h)
+
+bcs_du = []
+eps = 1
+iters = 0
+maxiter = 5000
+eps2 = 2
+
+while eps > tol and iters < maxiter:
+    iters += 1 
+    (v_hk, u_nk) = split(u_k)
+    #First coupled equation: Q'' = 1/x*Q' +16pi*y^2
+    F = -Q.dx(0)*vr.dx(0)*dx                                \
+        + 1/x*Q.dx(0)*vr.dx(0)*dx                           \
+        + 16*math.pi*y*vr*dx  
+    
+    # Second coupled equation y'' = ... y ... x ... Q
+    F = F - y.dx(0)*pr.dx(0)*dx                             \
+        + y/x*pr*dx                                         \
+        + (5*C1)/(3*C3)*(y)**(7/3)/(x)**(5/3)*pr*dx         \
+        - 4/3*(x)**(7/3)*(y)**(5/4)*pr*dx                   \
+        + 1/C3*Q*pr*dx  
+    
+    #Calculate Jacobian
+    J = derivative(F, u_k, du_trial)
+ 
+    #Assemble system
+    A, b = assemble_system(J, -F, bcs_du)
+    print('check 3')
+    solve(A, du.vector(), b)
+
