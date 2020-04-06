@@ -21,7 +21,7 @@ import numpy as np
 from dolfin import *
 import matplotlib as mpl
 from matplotlib import pyplot as plt
-
+from petsc4py import *
 
 plt.close('all')
 
@@ -32,17 +32,17 @@ plt.close('all')
 -------------------------------------------------------------------------------------------"""
 
 
-def plotting_solve_result(u, mesh):
-    if u == u_i :
+def plotting_solve_result(u, mesh_bool):
+    if u == v_h :
         plt.figure()
         plt.title("Last calculated Internal potential u_l")
         plt.xlabel("Radial coordinate")
         #mpl.scale.LogScale(r)
         plt.ylabel("Internal potential Vi")
         plt.grid()
-        if mesh == True :
+        if mesh_bool == True :
             plot(mesh)
-        plot(u_i)
+        plot(v_h)
         
     elif u == u_n :
         plt.figure()
@@ -51,7 +51,7 @@ def plotting_solve_result(u, mesh):
         #mpl.scale.LogScale(r)
         plt.ylabel("Density [n]")
         plt.grid()
-        if mesh == True :
+        if mesh_bool == True :
             plot(mesh)
         plot(u_n)
         
@@ -61,7 +61,7 @@ def plotting_solve_result(u, mesh):
         plt.xlabel("Radial coordinate")
         plt.ylabel("projection of Z/(4.0*pi)*gr.dx(0)/r ")
         plt.grid()
-        if mesh == True :
+        if mesh_bool == True :
             plot(mesh)
         plot(nr)
     elif u == gr:
@@ -70,7 +70,7 @@ def plotting_solve_result(u, mesh):
          plt.xlabel("Radial coordinate")
          plt.ylabel("projection of derivative of n towards r")
          plt.grid()
-         if mesh == True :
+         if mesh_bool == True :
             plot(mesh)
          plot(gr)
     else :
@@ -286,7 +286,7 @@ a=1/sqrt(2*pi)
 b=1
 #n_i = a*exp(pow((-b*(r)), 2))
 n = Function(V)
-n_i = Constant(0)
+n_i = Constant(10)
 
 
 n = interpolate(N,V)
@@ -296,50 +296,40 @@ n.vector()[:] = n.vector()*N/intn
 intn = float(assemble((n)*dx(mesh)))
 print("Number of electrons after adjustment:",intn)
 
+# Defining a unrealistic initial mu (Chemical potential)
+mu = 0
+
 """-------------------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------------
                     Defining and solving the variational problem
                     defining trial and test functions
 ----------------------------------------------------------------------------------------------
 -------------------------------------------------------------------------------------------"""
-print('check 1')
-
-#u_n = TrialFunction(V) #Trying out online solutions to the PETSc error code
-#v_h = TrialFunction(V)
-
 u_n = interpolate(n_i, V)
-v_h = interpolate(Constant(-1), V)
+v_h = interpolate(Constant(-10), V)
 
 mixed_test_functions = TestFunction(W)
 (vr, pr) = split(mixed_test_functions)
 
-
-print('check 2')
 du_trial = TrialFunction(W)        
 du = Function(W)
 
-
-
 u_k = Function(W)
-assign(u_k.sub(0), v_h)
-assign(u_k.sub(1), u_n)
+#assign(u_k.sub(0), v_h)
+#assign(u_k.sub(1), u_n)
 
 print('check 3')
 
 
-
-
-
 bcs_du = []
-eps = 1
+eps = 100
 iters = 0
 maxiter = 5000
-minimal_error = 1E-6
+minimal_error = 1E-14
 print('check 4')
 while eps > minimal_error and iters < maxiter:
     iters += 1 
-    print('check Loop top ', iters)
-    
+       
     (v_hk, u_nk) = split(u_k)
     #--Rewriting variables for overview--
     l = sqrt(r)
@@ -348,7 +338,6 @@ while eps > minimal_error and iters < maxiter:
     
     
     densobj = DensityRadialWeakForm(u_nk, pr)
-    #funcpots = fucn_tf(weakdens) + func_dirac(weakdens) + func_weizsacker(weakdens)  
     funcpots = 0
     for f in functionals:
         if isinstance(f,tuple):
@@ -359,14 +348,14 @@ while eps > minimal_error and iters < maxiter:
     #First coupled equation: Q'' = 1/l*Q' +16pi*y^2
     F = -Q.dx(0)*vr.dx(0)*dx                                \
     + 1/l*Q.dx(0)*vr.dx(0)*dx                               \
-    + 16*math.pi*y*vr*dx  
+    + 16*math.pi*vr*dx  
     
     # Second coupled equation y'' = ... y ... x ... Q
     F = F - y.dx(0)*pr.dx(0)*dx                             \
     + y/l*pr*dx                                             \
     + (5*C1)/(3*C3)*(y)**(7/3)/(l)**(5/3)*pr*dx             \
-    - 4/3*(l)**(7/3)*(y)**(5/4)*pr*dx                       \
-    + 1/C3*Q*pr*dx  
+    - 4/3*(l)**(7/3)*(y)**(5/4)*y*pr*dx                       \
+    + 1/C3*(mu*l**2-Q)*y*pr*dx  
     
     #Calculate Jacobian
     J = derivative(F, u_k, du_trial)
@@ -375,8 +364,7 @@ while eps > minimal_error and iters < maxiter:
     A, b = assemble_system(J, -F, bcs_du)
        
     solve(A, du.vector(), b)
-    
-    print('check Loop middle', iters)
+    (v_hk, u_nk) = split(u_k)
     # Conserve memory by reusing vectors for v_h and u_n to keep dv_h and du_n
     dv_h = v_h
     v_h = None
@@ -386,11 +374,29 @@ while eps > minimal_error and iters < maxiter:
     assign(du_n, du.sub(1))
     
     #Calculate the Error
-    avg = sum(dv_h.vector())/len(dv_h.vector())
+    """ https://www.mcs.anl.gov/petsc/petsc-current/docs/manualpages/Vec/index.html """
+    
+    #---- Try to get values with numpy.array() --------
+    avg = sum(np.array(dv_h.vector())/len(np.array(dv_h.vector())))
     eps = np.linalg.norm(np.array(du.vector())-avg, ord=np.Inf)
-    print('Iteration for self-consistency:', iters,'norm:', eps)
-    if math.isnan(eps):
-            raise Exception("Residual error is NaN")
+    
+    #---- Try to get values with gather() --------------
+    #array1 = gather(dv_h)
+    #array2 = gather(du)
+    #avg = sum(array1())/len(array1())
+    
+    #----- Try to get values with VecGetArrayRead() / VecGetValues() ---- 
+    #testarray = VecGetArrayRead(dv_h)
+    #avg = sum(testarray)/len(testarray)
+    #testarray2 = VecGetArrayRead(du_n)
+    #eps = np.linalg.norm(testarray2-avg, ord=np.Inf)
+
+    #----- As it is written in PyDeFuSe ---------------------- 
+    #avg = sum(dv_h.vector().array())/len(dv_h.vector().array())
+    #eps = numpy.linalg.norm(du_n.vector().array()-avg, ord=numpy.Inf)
+    #print('??Iteration for self-consistency:', iters,'norm:', eps)
+    #if math.isnan(eps):
+    #        raise Exception("Residual error is NaN")
     
     # Conserve memory by reusing vectors for u_n, v_h also as du_n, dv_h
     v_h = dv_h 
@@ -406,25 +412,30 @@ while eps > minimal_error and iters < maxiter:
     minval = nvec.min()
     if minval <= 0.0:
         nvec[:]=nvec[:]-minval+0.1
-        intn = float(assemble((n)*dx(mesh)))
+        intn = float(assemble((u_n)*dx(mesh)))
         print("Number of electrons before correction:",intn)
-        nvec[:] = nvec[:]*self.N/intn    
-        intn = float(assemble((field)*dx(mesh)))            
+        nvec[:] = nvec[:]*N/intn    
+        intn = float(assemble((u_n)*dx(mesh)))            
         assign(u_k.sub(1),n)
         print("Number of electrons after correction:",intn)
     
     # Calculate v_h allignment correction 
     vh_align = float(assemble((v_h)*dx(mesh)))
-    mu = fake_mu - vh_align
+    mu_new = mu - vh_align
     
     u_n = u_n
-    vh.vector()[:] += vh_align
+    v_h.vector()[:] += vh_align
     vh_align = 0.0
     v_h = v_h
-    print('check Loop End', iters)
-               
-plotting_solve_result(u_n, True)
-
+    print('Number of iterations', iters)
+    #print('v_h.vector()', v_h.vector().get_local())
+    print('u_n.vector()', u_n.vector().get_local())
+              
+#-----------------mu_new will be used for Calculating the energies    
+    
+    
+plotting_solve_result(u_n, False)
+plotting_solve_result(v_h, False)
 #gr = project(u_n.dx(0),V)
 #plotting_solve_result(gr, False)
 
