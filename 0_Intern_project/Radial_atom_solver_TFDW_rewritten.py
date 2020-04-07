@@ -195,8 +195,8 @@ functionals = [#TF(),\
 -------------------------------------------------------------------------------------------""" 
 # Create mesh and define function space
 start_x = 0
-end_x = 2
-amount_vertices = 10
+end_x = 3
+amount_vertices = 6
 mesh = IntervalMesh(amount_vertices,start_x, end_x) # Splits up the interval [0,1] in (n) elements 
 
 #Creation of Function Space
@@ -275,29 +275,30 @@ bcs = [bc_L, bc_R]
 ----------------------------------------------------------------------------------------------
 -------------------------------------------------------------------------------------------"""
 #External potential v_e[r] is analytically described for atoms 
-#Ex = -Z/r
+Ex = -Z/r
 Ex =Constant(1)
 
+"""
 #Fake External potential
-#Ex = Function(V)
-#rhs = Function(V)
+Ex = Function(V)
+rhs = Function(V)
 
-#rhs.vector()[:]  = 0 
-#u = TrialFunction(V)
-#v = TestFunction(V)
-#a = dot(grad(u), grad(v))*dx
-#L = rhs*v*dx
+Ex.vector()[:] =0
+rhs.vector()[:]  = 0 
+u = TrialFunction(V)
+v = TestFunction(V)
+a = dot(grad(u), grad(v))*dx
+L = rhs*v*dx
+A,b = assemble_system(a, L, bcs)
 
-#A,b = assemble_system(a, L, bcs)
+solve(A, Ex.vector(), b)
 
-#solve(A, Ex.vector(), b)
-#print('printing Ex', Ex.vector().get_local())
-#fe.solve_poisson(self.fel, self.vext, rhs, self.cartcoords, self.deltastrengths)
-##def solve_poisson(fel, sol, rhs, deltacoords = [], deltastrengths = [], boundaryexpr=None, preserve_rhs=True):
-              
+print('printing Ex', Ex.vector().get_local())
+"""
+            
 
 #---constants---
-lamb = 0.45
+lamb = 0.9
 C1 = 3/10*(3*math.pi**2)**(2/3)
 C2 = 3/4*(3/math.pi)**(1/3)
 C3 = lamb/8
@@ -305,20 +306,19 @@ mu = 0
 omega = Constant(1)
 
 #Initial density n_i[r]
-a=1/sqrt(2*pi)
-b=1
-#n_i = a*exp(pow((-b*(r)), 2))
-n_i = Constant(0)
+
+n_i = Expression('a*exp(-b*pow(x[0], 2))', degree = 2, a = 1/sqrt(2*pi), b=1)
+#n_i = Constant(1)
 u_n = interpolate(n_i, V)
 nlast = Function(V)
+
 #------------Checking amount of electrons ----------------------
-u_n = interpolate(N,V)
+u_n = interpolate(n_i,V)
 intn = float(assemble((u_n)*dx(mesh)))
-print("Density integrated before adjustment:"+str(intn))
+print("Number of electrons before adjustment:"+str(intn))
 u_n.vector()[:] = u_n.vector()*N/intn  
 intn = float(assemble((u_n)*dx(mesh)))
 print("Number of electrons after adjustment:",intn)
-
 
 """-------------------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------------
@@ -326,7 +326,6 @@ print("Number of electrons after adjustment:",intn)
                     defining trial and test functions
 ----------------------------------------------------------------------------------------------
 -------------------------------------------------------------------------------------------"""
-
 v_h = interpolate(Constant(-1), V)
 
 mixed_test_functions = TestFunction(W)
@@ -340,24 +339,23 @@ assign(u_k.sub(0), v_h)
 assign(u_k.sub(1), u_n)
 
 
-
 bcs_du = []
-eps = 1
+eps = 1E-6
 iters = 0
-maxiter = 5000
-minimal_error = 1E-6
+maxiter = 50
+minimal_error = 1E-9
 
 while eps > minimal_error and iters < maxiter:
     iters += 1 
-    
+    #######print('check begin loop', iters)
     (v_hk, u_nk) = split(u_k)
     
-    #--Rewriting variables for overview--
+    #---- Rewriting variables for overview---------
     l = sqrt(r)
     y = r*sqrt(u_nk)
     Q = r*(Ex+v_hk)
     
-    # ----Setting up functionals ----
+    #---- Setting up functionals -------------------
     densobj = DensityRadialWeakForm(u_nk, pr)
     funcpots = 0
     for f in functionals:
@@ -366,19 +364,19 @@ while eps > minimal_error and iters < maxiter:
         else:
             funcpots += f.potential_weakform(densobj)
             
-    #----Solving v_h -------
+    #---- Solving v_h and u_n ----------------------
     
     #First coupled equation: Q'' = 1/l*Q' +16pi*y^2
-    F = -Q.dx(0)*vr.dx(0)*dx                                \
-    + 1/l*Q.dx(0)*vr.dx(0)*dx                               \
-    + 16*math.pi*y**2*vr*dx  
+    F = Q.dx(0)*vr.dx(0)*dx                                \
+    - 1/l*Q.dx(0)*vr.dx(0)*dx                               \
+    - 16*math.pi*y**2*vr*dx  
     
     # Second coupled equation y'' = ... y ... x ... Q
-    F = F - y.dx(0)*pr.dx(0)*dx                             \
-    + y/l*pr*dx                                             \
-    + (5*C1)/(3*C3)*(y)**(7/3)/(l)**(5/3)*pr*dx             \
-    - 4/3*(l)**(7/3)*(y)**(5/4)*y*pr*dx                     \
-    + 1/C3*(mu*l**2-Q)*y*pr*dx  
+    F = F + y.dx(0)*pr.dx(0)*dx                             \
+    - y/l*pr*dx                                             \
+    - (5*C1)/(3*C3)*(y)**(7/3)/(l)**(5/3)*pr*dx             \
+    + 4/3*(l)**(7/3)*(y)**(5/4)*y*pr*dx                     \
+    - 1/C3*(mu*l**2-Q)*y*pr*dx  
     
     #Calculate Jacobian
     J = derivative(F, u_k, du_trial)
@@ -387,32 +385,116 @@ while eps > minimal_error and iters < maxiter:
     A, b = assemble_system(J, -F, bcs_du)
        
     solve(A, du.vector(), b)
+    #####print('check middle loop', iters)
     
     # Conserve memory by reusing vectors for v_h and u_n to keep dv_h and du_n
-    dv_h = v_h
-    assign(dv_h, du.sub(0))
-    v_h = None
+    dv_h = v_h                  #step to transfer type info to dv_h
+    assign(dv_h, du.sub(0))     #step to transfer values to dv_h
+    v_h = None                  #empty v_h
     
-    du_n = u_n
-    assign(du_n, du.sub(1))
-    u_n = None
+    du_n = u_n                  #step to transfer type info to du_n
+    assign(du_n, du.sub(1))     #step to transfer values to du_n
+    u_n = None                  #empty u_n
     
     
-    #Calculate the Error
-    
-    """ https://www.mcs.anl.gov/petsc/petsc-current/docs/manualpages/Vec/index.html """
-    #try L2 Error
-    #error_L2 = errornorm(dv_h, du_n, 'L2')
-    #print('error_L2  =', error_L2)
-    #eps = error_L2
-    
-    #---- Try to get values with get_local() --------
-    avg = sum(dv_h.vector().get_local())/len(dv_h.vector().get_local())
-    eps = np.linalg.norm(du.vector().get_local()-avg, ord=np.Inf)
-    print('Iteration for self-consistency:', iters,'norm:', eps)
+    #---- Calculate the Error -----------------------
+    error_L2 = errornorm(du_n, dv_h, 'L2')
+    eps = error_L2
     if math.isnan(eps):
             raise Exception("Residual error is NaN")
-            
+
+    
+    #---- Taking the step for u_n and v_h ------------
+    assign(nlast, u_k.sub(1))
+    u_k.vector()[:] = u_k.vector()[:] + omega*du.vector()[:]
+    
+    # Conserve memory by reusing vectors for u_n, v_h also as du_n, dv_h
+    v_h = dv_h 
+    assign(v_h, u_k.sub(0))
+    dv_h = None
+    
+    u_n = du_n 
+    assign(u_n, u_k.sub(1))
+    du_n = None                        
+    
+    ###print('check for negative density', u_n.vector().get_local())
+    
+    #---- Ad hoc negative density fix -------
+    omega = 1 
+    nvec = u_n.vector()
+    minval = nvec.min()
+    if minval <= 0.0:
+        nvec[:]=nvec[:]-minval+1
+        intn = float(assemble((u_n)*dx(mesh)))
+        print("Number of electrons before correction:",intn)
+        nvec[:] = nvec[:]*N/intn    
+        intn = float(assemble((u_n)*dx(mesh)))            
+        assign(u_k.sub(1),u_n)
+        print("Number of electrons after correction:",intn)
+        
+    ###print('check for negative density', u_n.vector().get_local())
+   
+    #------- Calculate v_h allignment correction 
+    vh_align = float(assemble((v_h)*dx(mesh)))
+    mu_new = mu - vh_align
+    
+    v_h.vector()[:] += vh_align
+    vh_align = 0.0
+    print('Check end of loop, iteration: ', iters,' Error: ', eps)
+
+
+plotting_solve_result(u_n, False)
+plotting_solve_result(v_h, False)
+
+#------------------------- calculate v_h
+calc_vh = Function(V)
+rhs = Function(V)
+rhs.assign(u_n)
+calc_vh.vector()[:]=0
+    
+u = TrialFunction(V)
+v = TestFunction(V)
+a = dot(grad(u), grad(v))*dx
+L = rhs*v*dx
+
+A,b = assemble_system(a, L, bcs)
+
+solve(A, calc_vh.vector(), b)
+v_h = calc_vh
+#---------------------------------solve for u_n from v_h
+bsc = []
+a = u*v*dx
+L = (1.0/(4.0*pi))*inner(grad(v_h),grad(v))*dx
+solve(a == L, u_n,bcs)
+
+  
+plotting_solve_result(u_n, False)
+plotting_solve_result(v_h, False)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+"""
+Error as written in PyDeFuSe
+#avg = sum(dv_h.vector().get_local())/len(dv_h.vector().get_local())
+    #eps = np.linalg.norm(du.vector().get_local()-avg, ord=np.Inf)
+    
+     
+
+
+https://www.mcs.anl.gov/petsc/petsc-current/docs/manualpages/Vec/index.html 
+
     #---- Try to get values with numpy.array() --------
     #avg = sum(np.array(dv_h.vector())/len(np.array(dv_h.vector())))
     #eps = np.linalg.norm(np.array(du.vector())-avg, ord=np.Inf)
@@ -434,83 +516,24 @@ while eps > minimal_error and iters < maxiter:
     #----- As it is written in PyDeFuSe ---------------------- 
     #avg = sum(dv_h.vector().array())/len(dv_h.vector().array())
     #eps = numpy.linalg.norm(du_n.vector().array()-avg, ord=numpy.Inf)
-    print('check 1')
-        
-    du_nvec = du_n.vector()
-    if (du_nvec<0.0).sum() > 0:
-        maxomega = -min(np.divide(nlast.vector()[du_nvec<0],du_n.vector()[du_nvec<0]))
-        if maxomega > 0 and maxomega < omega:
-            omega = maxomega/2.0
-    print('check 2')
-    #---- Taking the step for u_n and v_h -------
     
-    assign(nlast, u_k.sub(1))
-    u_k.vector()[:] = u_k.vector()[:] + omega*du.vector()[:]
-    
-    # Conserve memory by reusing vectors for u_n, v_h also as du_n, dv_h
-    v_h = dv_h 
-    assign(v_h, u_k.sub(0))
-    dv_h = None
-    
-    u_n = du_n 
-    assign(u_n, u_k.sub(1))
-    #du_n = None                        
-    
-    
-    
-    #print('check for negative density', u_n.vector().get_local())
-    #---- Ad hoc negative density fix -------
-    omega = 1 
-    nvec = u_n.vector()
-    minval = nvec.min()
-    if minval <= 0.0:
-        nvec[:]=nvec[:]-minval+1
-        intn = float(assemble((u_n)*dx(mesh)))
-        print("Number of electrons before correction:",intn)
-        nvec[:] = nvec[:]*N/intn    
-        intn = float(assemble((u_n)*dx(mesh)))            
-        assign(u_k.sub(1),u_n)
-        print("Number of electrons after correction:",intn)
-        
-    #print('check for negative density', u_n.vector().get_local())
-   
-    #------- Calculate v_h allignment correction 
-    vh_align = float(assemble((v_h)*dx(mesh)))
-    mu_new = mu - vh_align
-    
-    v_h.vector()[:] += vh_align
-    vh_align = 0.0
-    
-   
+    #--Negative density fix ' max step'      
+    #du_nvec = du_n.vector()
+    #if (du_nvec<0.0).sum() > 0:
+    #    maxomega = -min(np.divide(nlast.vector()[du_nvec<0],du_n.vector()[du_nvec<0]))
+    #    if maxomega > 0 and maxomega < omega:
+    #        omega = maxomega/2.0
 
 
 
-#calc_vh = Function(V)
-#rhs = Function(V)
-#rhs.assign(u_n)
-#calc_vh.vector()[:]=0
-    
-#u = TrialFunction(V)
-#v = TestFunction(V)
-#a = dot(grad(u), grad(v))*dx
-#L = rhs*v*dx
-
-#A,b = assemble_system(a, L, bcs)
-
-#solve(A, calc_vh.vector(), b)
-#v_h = calc_vh
-#-----------------mu_new will be used for Calculating the energies    
-    
-    
-plotting_solve_result(u_n, False)
-plotting_solve_result(v_h, False)
+#-----------------mu_new will be used for Calculating the energies
 #gr = project(u_n.dx(0),V)
 #plotting_solve_result(gr, False)
 
 #nr = project(Z/(4.0*pi)*gr.dx(0)/r,V)
 #plotting_solve_result(nr, False) 
 
-
+"""
 """-------------------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------------
                     Saving VTKfile for post processing in ParaView
@@ -519,10 +542,4 @@ plotting_solve_result(v_h, False)
 #Save solution to file in VTK format
 vtkfile = File('VTKfiles/radial_atom_solver_TF.pvd')
 vtkfile << u_n
-
--------------------------------------------------------------------------------------------
----------------------------------------------------------------------------------------------- 
-                    Computing the error 
-----------------------------------------------------------------------------------------------
--------------------------------------------------------------------------------------------"""
-#
+"""
