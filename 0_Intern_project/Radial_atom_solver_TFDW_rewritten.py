@@ -195,8 +195,8 @@ functionals = [#TF(),\
 -------------------------------------------------------------------------------------------""" 
 # Create mesh and define function space
 start_x = 0
-end_x = 3
-amount_vertices = 6
+end_x = 4
+amount_vertices = 12
 mesh = IntervalMesh(amount_vertices,start_x, end_x) # Splits up the interval [0,1] in (n) elements 
 
 #Creation of Function Space
@@ -276,7 +276,7 @@ bcs = [bc_L, bc_R]
 -------------------------------------------------------------------------------------------"""
 #External potential v_e[r] is analytically described for atoms 
 Ex = -Z/r
-Ex =Constant(1)
+#Ex =Constant(1)
 
 """
 #Fake External potential
@@ -305,10 +305,10 @@ C3 = lamb/8
 mu = 0
 omega = Constant(1)
 
-#Initial density n_i[r]
+#------ Initial density ------]
 
-n_i = Expression('a*exp(-b*pow(x[0], 2))', degree = 2, a = 1/sqrt(2*pi), b=1)
-#n_i = Constant(1)
+#n_i = Expression('a*exp(-b*pow(x[0], 2))', degree = 2, a = 1/sqrt(2*pi), b=1)
+n_i = Constant(1)
 u_n = interpolate(n_i, V)
 nlast = Function(V)
 
@@ -326,7 +326,7 @@ print("Number of electrons after adjustment:",intn)
                     defining trial and test functions
 ----------------------------------------------------------------------------------------------
 -------------------------------------------------------------------------------------------"""
-v_h = interpolate(Constant(-1), V)
+v_h = interpolate(Constant(-2), V)
 
 mixed_test_functions = TestFunction(W)
 (vr, pr) = split(mixed_test_functions)
@@ -334,15 +334,16 @@ mixed_test_functions = TestFunction(W)
 du_trial = TrialFunction(W)        
 du = Function(W)
 
+# Put the initial density and v_h in u_k
 u_k = Function(W)
 assign(u_k.sub(0), v_h)
 assign(u_k.sub(1), u_n)
 
 
 bcs_du = []
-eps = 1E-6
+eps = 1
 iters = 0
-maxiter = 50
+maxiter = 1000
 minimal_error = 1E-9
 
 while eps > minimal_error and iters < maxiter:
@@ -400,6 +401,8 @@ while eps > minimal_error and iters < maxiter:
     #---- Calculate the Error -----------------------
     error_L2 = errornorm(du_n, dv_h, 'L2')
     eps = error_L2
+    #avg = sum(dv_h.vector().get_local())/len(dv_h.vector().get_local())
+    #eps = np.linalg.norm(du.vector().get_local()-avg, ord=np.Inf)
     if math.isnan(eps):
             raise Exception("Residual error is NaN")
 
