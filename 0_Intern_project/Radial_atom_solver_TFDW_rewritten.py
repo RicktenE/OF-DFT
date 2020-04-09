@@ -195,8 +195,8 @@ functionals = [#TF(),\
 -------------------------------------------------------------------------------------------""" 
 # Create mesh and define function space
 start_x = 0
-end_x = 4
-amount_vertices = 12
+end_x = 2
+amount_vertices = 10
 mesh = IntervalMesh(amount_vertices,start_x, end_x) # Splits up the interval [0,1] in (n) elements 
 
 #Creation of Function Space
@@ -343,7 +343,7 @@ assign(u_k.sub(1), u_n)
 bcs_du = []
 eps = 1
 iters = 0
-maxiter = 1000
+maxiter = 100
 minimal_error = 1E-9
 
 while eps > minimal_error and iters < maxiter:
@@ -397,12 +397,36 @@ while eps > minimal_error and iters < maxiter:
     assign(du_n, du.sub(1))     #step to transfer values to du_n
     u_n = None                  #empty u_n
     
+    #---- changing negative density ---
+    """# Somehow the values in the array are not ajusted by the for-loop
+    print('check loop, ', iters)
+    print('check for negative du_n before', du_n.vector().get_local())
+    #####du_n.vector().get_local()[du_n.vector().get_local < 0] = Constant(0)
+    [Constant(0) if i < 0 else i for i in du_n.vector().get_local()]
+    
+    print('check for negative du_n after', du_n.vector().get_local())
+    """
+    #---- Ad hoc negative density fix -------
+    print('check for negative du_n before', du_n.vector().get_local())
+    omega = 1 
+    du_nvec = du_n.vector()
+    minval = du_nvec.min()
+    if minval <= 0.0:
+        du_nvec[:]=du_nvec[:]-minval+1
+        intn = float(assemble((du_n)*dx(mesh)))
+        print("Number of electrons before correction:",intn)
+        du_nvec[:] = du_nvec[:]*N/intn    
+        intn = float(assemble((du_n)*dx(mesh)))            
+        assign(u_k.sub(1),du_n)
+        print("Number of electrons after correction:",intn)
+    print('check for negative du_n after', du_n.vector().get_local())   
+    
     
     #---- Calculate the Error -----------------------
-    error_L2 = errornorm(du_n, dv_h, 'L2')
-    eps = error_L2
-    #avg = sum(dv_h.vector().get_local())/len(dv_h.vector().get_local())
-    #eps = np.linalg.norm(du.vector().get_local()-avg, ord=np.Inf)
+    #error_L2 = errornorm(du_n, dv_h, 'L2')
+    #eps = error_L2
+    avg = sum(dv_h.vector().get_local())/len(dv_h.vector().get_local())
+    eps = np.linalg.norm(du.vector().get_local()-avg, ord=np.Inf)
     if math.isnan(eps):
             raise Exception("Residual error is NaN")
 
@@ -418,11 +442,10 @@ while eps > minimal_error and iters < maxiter:
     
     u_n = du_n 
     assign(u_n, u_k.sub(1))
-    du_n = None                        
-    
-    ###print('check for negative density', u_n.vector().get_local())
-    
+    du_n = None  
+                      
     #---- Ad hoc negative density fix -------
+    print('check for negative u_n before', u_n.vector().get_local())
     omega = 1 
     nvec = u_n.vector()
     minval = nvec.min()
@@ -435,7 +458,7 @@ while eps > minimal_error and iters < maxiter:
         assign(u_k.sub(1),u_n)
         print("Number of electrons after correction:",intn)
         
-    ###print('check for negative density', u_n.vector().get_local())
+    print('check for negative u_n after', u_n.vector().get_local())
    
     #------- Calculate v_h allignment correction 
     vh_align = float(assemble((v_h)*dx(mesh)))
