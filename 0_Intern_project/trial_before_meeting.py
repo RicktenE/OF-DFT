@@ -299,7 +299,7 @@ print('printing Ex', Ex.vector().get_local())
             
 
 #---constants---
-lamb = 0.9
+lamb = 1/9
 C1 = 3/10*(3*math.pi**2)**(2/3)
 C2 = 3/4*(3/math.pi)**(1/3)
 C3 = lamb/8
@@ -343,7 +343,7 @@ assign(u_k.sub(1), u_n)
 bcs_du = []
 eps = 1
 iters = 0
-maxiter = 100
+maxiter = 1000
 minimal_error = 1E-9
 
 while eps > minimal_error and iters < maxiter:
@@ -375,10 +375,10 @@ while eps > minimal_error and iters < maxiter:
     
     # Second coupled equation y'' = ... y ... x ... Q
     F = F + y.dx(0)*pr.dx(0)*dx                             \
-    - y/l*pr*dx                                             \
-    - (5*C1)/(3*C3)*(y)**(7/3)/(l)**(5/3)*pr*dx             \
-    + 4/3*(l)**(7/3)*(y)**(5/4)*y*pr*dx                     \
-    - 1/C3*r*(mu*r**2-Q)*y*pr*dx  
+    - y.dx(0)/l*pr*dx                                             \
+    - (5*C1)/(3*C3)*(y)**(7/3)/(l)**(2/3)*pr*dx             \
+    + 4/3*(l)**(2/3)*(y)**(5/3)*pr*dx                     \
+    - 1/C3*(mu*r-Q)*y*pr*dx  
     
     #Calculate Jacobian
     J = derivative(F, u_k, du_trial)
@@ -386,11 +386,11 @@ while eps > minimal_error and iters < maxiter:
     #Assemble system
     A, b = assemble_system(J, -F, bcs_du)
     
-    print('du before solve', du.vector().get_local())
+    #print('du before solve', du.vector().get_local())
     
     solve(A, du.vector(), b)
     
-    print('du after solve', du.vector().get_local())
+    #print('du after solve', du.vector().get_local())
         
     # Conserve memory by reusing vectors for v_h and u_n to keep dv_h and du_n
     dv_h = v_h                  #step to transfer type info to dv_h
@@ -401,7 +401,7 @@ while eps > minimal_error and iters < maxiter:
     assign(du_n, du.sub(1))     #step to transfer values to du_n
     u_n = None                  #empty u_n
     
-    print('check for dv_h ', dv_h.vector().get_local())
+    #print('check for dv_h ', dv_h.vector().get_local())
     #---- Calculate the Error -----------------------
     #error_L2 = errornorm(du_n, dv_h, 'L2')
     #eps = error_L2

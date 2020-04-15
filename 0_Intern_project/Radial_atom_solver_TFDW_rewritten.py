@@ -201,8 +201,8 @@ functionals = [TF(),\
 -------------------------------------------------------------------------------------------""" 
 # Create mesh and define function space
 start_x = 0.01
-end_x = 2
-amount_vertices = 20
+end_x = 20
+amount_vertices = 200
 mesh = IntervalMesh(amount_vertices,start_x, end_x) # Splits up the interval [0,1] in (n) elements 
 
 #Creation of Function Space
@@ -216,16 +216,16 @@ W = FunctionSpace(mesh, element)
 r = SpatialCoordinate(mesh)[0] # r are the x coordinates. 
 
 #Element H
-#Z = Constant(1) # Hydrogen
-#N = Z # Neutral
+Z = Constant(1) # Hydrogen
+N = Z # Neutral
 
 #Element Ne
 #Z = Constant(10) # Neon
 #N = Z # Neutral
 
 #Element Kr
-Z = Constant(36) # Krypton
-N = Z # Neutral 
+#Z = Constant(36) # Krypton
+#N = Z # Neutral 
 
 
 
@@ -263,7 +263,7 @@ bcs = [bc_L, bc_R]
 ----------------------------------------------------------------------------------------------
 -------------------------------------------------------------------------------------------"""
 #---constants---
-lamb = 1/9
+lamb = 1/5
 C1 = 3/10*(3*math.pi**2)**(2/3)
 C2 = 3/4*(3/math.pi)**(1/3)
 C3 = lamb/8
@@ -283,10 +283,10 @@ C__ = 1/C3
 #External potential v_e[r] is analytically described for atoms 
 Ex = -Z/r
 
-#------ Initial density ------]
+#------ Initial density ------
 
-n_i = Expression('a*exp(-b*pow(x[0], 2))', degree = 2, a = 1/sqrt(2*pi), b=0.1)
-#n_i = Constant(1)
+#n_i = Expression('a*exp(-b*pow(x[0], 2))', degree = 2, a = 1/sqrt(2*pi), b=0.1)
+n_i = Constant(1)
 
 nlast = Function(V)
 
@@ -321,7 +321,7 @@ assign(u_k.sub(1), u_n)
 bcs_du = []
 eps = 1
 iters = 0
-maxiter = 300
+maxiter = 1000
 minimal_error = 1E-9
 
 while eps > minimal_error and iters < maxiter:
@@ -340,7 +340,7 @@ while eps > minimal_error and iters < maxiter:
             funcpots += f.potential_weakform(densobj)
             
     #---- Solving v_h and u_n ----------------------
-   
+    """
     ## Variational equation as taken directly from paper
         #Rewriting variables for overview
     h = sqrt(r)
@@ -349,17 +349,17 @@ while eps > minimal_error and iters < maxiter:
        
     ##First PDE from paper
     F = y.dx(0)*qr.dx(0)*dx             \
-        - y.dx(0)*1/h*qr*dx             \
-        + A__*y**(7/3)*h**(-2/3)*qr*dx   \
+        - y.dx(0)/h*qr*dx             \
+        + A__*y**(7/3) / h**(2/3)*qr*dx   \
         - B__*y**(5/3)*h**(2/3)*qr*dx   \
-        + C__*(mu*h**2-Q)*y*qr*dx
+        + C__*(mu*r-Q)*y*qr*dx
         
     ## Second PDE from paper
     F = F -(                            \
             + Q.dx(0)*pr.dx(0)*dx       \
-            - Q.dx(0)*1/h*pr*dx         \
+            - 1/h*Q.dx(0)*pr*dx         \
             - 16*math.pi*y**2*pr*dx)
-    """
+    
     ## Variational equation without rotational transformation --
          #--- Rewriting variables for overview ---
     U_ = sqrt(u_nk)
@@ -374,9 +374,7 @@ while eps > minimal_error and iters < maxiter:
     F = F -(                        \
         + v_hk.dx(0)*pr.dx(0)*dx    \
         - 4*math.pi*u_nk*pr*dx)
-   
-    
-        
+   """    
     ## Variational equation With Radial transformation 
        #--- Rewriting variables for overview ---
     U_ = sqrt(u_nk)
@@ -397,7 +395,7 @@ while eps > minimal_error and iters < maxiter:
         - v_hk.dx(0)*pr.dx(0)*dx    \
         + 2*(1/r)*v_hk.dx(0)*pr*dx  \
         + 4*math.pi*u_nk*pr*dx)
-    """
+    
     
     #Calculate Jacobian
     J = derivative(F, u_k, du_trial)
