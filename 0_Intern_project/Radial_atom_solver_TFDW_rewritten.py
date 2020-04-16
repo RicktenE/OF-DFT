@@ -485,6 +485,6 @@ a = u*v*dx
 L = (1.0/(4.0*pi))*inner(grad(v_h),grad(v))*dx
 solve(a == L, u_n,bcs)
 
-u_n = r*sqrt(u_n)
+#u_n = r*sqrt(u_n)
 plotting_solve_result(u_n)
 plotting_solve_result(v_h)
