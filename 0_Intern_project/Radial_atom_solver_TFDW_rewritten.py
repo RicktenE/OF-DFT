@@ -200,7 +200,7 @@ functionals = [TF(),\
 ----------------------------------------------------------------------------------------------
 -------------------------------------------------------------------------------------------""" 
 # Create mesh and define function space
-start_x = 0.01
+start_x = 0.1
 end_x = 20
 amount_vertices = 200
 mesh = IntervalMesh(amount_vertices,start_x, end_x) # Splits up the interval [0,1] in (n) elements 
@@ -216,16 +216,16 @@ W = FunctionSpace(mesh, element)
 r = SpatialCoordinate(mesh)[0] # r are the x coordinates. 
 
 #Element H
-Z = Constant(1) # Hydrogen
-N = Z # Neutral
+#Z = Constant(1) # Hydrogen
+#N = Z # Neutral
 
 #Element Ne
 #Z = Constant(10) # Neon
 #N = Z # Neutral
 
 #Element Kr
-#Z = Constant(36) # Krypton
-#N = Z # Neutral 
+Z = Constant(36) # Krypton
+N = Z # Neutral 
 
 
 """-------------------------------------------------------------------------------------------
@@ -283,9 +283,9 @@ Ex = -Z/r
 
 #------ Initial density ------
 
-n_i = Expression('a*exp(-b*pow(x[0], 2))', degree = 2, a = 1, b=0.1)
-#n_i = Expression('pow(x[0],2)', degree = 2)
-#n_i = Constant(0.1)
+#n_i = Expression('a*exp(-b*pow(x[0], 2))', degree = 2, a = 1, b=0.1)
+n_i = Expression('pow(x[0],2)', degree = 2)
+#n_i = Constant(1)
 
 
 nlast = Function(V)
@@ -323,14 +323,12 @@ bcs_du = []
 
 eps = 1
 iters = 0
-maxiter = 50
+maxiter = 100
 minimal_error = 1E-9
 
 while eps > minimal_error and iters < maxiter:
     iters += 1 
     
-    #plotting_solve_result(u_n)      
-
     (v_hk, u_nk) = split(u_k)
     
     #---- Setting up functionals -------------------
@@ -445,23 +443,20 @@ while eps > minimal_error and iters < maxiter:
     
     v_h.vector()[:] += vh_align
     vh_align = 0.0
+    print('Check end of loop, iteration: ', iters,' Error: ', eps)
+    
+    #---- vh -> u_n
+    u = TrialFunction(V)
+    v = TestFunction(V)        
+    a = u*v*dx
+    # Works but with oscillations
+    L = (-1.0/(4.0*pi))*(2/r*v_h.dx(0)*v-v_h.dx(0)*v.dx(0))*dx
+    solve(a == L, u_n ,bcs)
+    
     plotting_solve_result(u_n)
     #plotting_solve_result(v_h)
-    print('Check end of loop, iteration: ', iters,' Error: ', eps)
+    
 
-
-plotting_solve_result(u_n)
-plotting_solve_result(v_h)
-
-
-u = TrialFunction(V)
-v = TestFunction(V)        
-a = u*v*dx
-# Works but with oscillations
-L = (-1.0/(4.0*pi))*(2/r*v_h.dx(0)*v-v_h.dx(0)*v.dx(0))*dx
-solve(a == L, u_n ,bcs)
-
-plotting_solve_result(u_n)
 """
 #------------------------- calculate v_h
 calc_vh = Function(V)
