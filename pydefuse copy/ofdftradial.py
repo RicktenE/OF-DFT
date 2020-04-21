@@ -109,7 +109,7 @@ class OfdftRadial(object):
         #print "Gridpoints:",self.felr.num_vertices,"range:",self.felr.grid_start,"-",self.felr.grid_end
         #print "Atom:", self.Z
         #print "Volume:",self.felr.vol
-        print "Number of electrons in system:",self.N
+        print("Number of electrons in system:",self.N)
                 
         timer.stop()
 
@@ -123,11 +123,11 @@ class OfdftRadial(object):
         timer.start("Prepare starting density")
         n = self.felr.scalar_field_from_expr('rho0*exp(-fac*Z*x[0])',Z=self.Z,fac=1.8,rho0=0.5*self.Z**3)
         intn = self.felr.integrate_scalar_field(n)
-        print "Density integrated before adjustment:",intn
+        print("Density integrated before adjustment:",intn)
         #n.vector()[:] = n.vector() - intn/vol + N/vol
         n.vector()[:] = n.vector()*self.N/intn  
         intn = self.felr.integrate_scalar_field(n)
-        print "Density integrated after first adjustment:",intn
+        print("Density integrated after first adjustment:",intn)
         self.n = n
         timer.stop()
 
@@ -147,7 +147,7 @@ class OfdftRadial(object):
 
         timer.start("Calculations etc.")
         N = self.felr.integrate_scalar_field(self.n)
-        print "CHECK N = int n_tf(r)",N
+        print("CHECK N = int n_tf(r)",N)
         self.iters = 0
         #r = SpatialCoordinate(msh)[0]
         #self.tfvh2 = project(-self.Z/r*sf + self.Z/r,V)
@@ -157,7 +157,7 @@ class OfdftRadial(object):
         nvec = self.n.vector()
         negs =(nvec<0.0).sum()
         minval = nvec.min()
-        print "Number of negative density elements:",negs,"min value",minval
+        print("Number of negative density elements:",negs,"min value",minval)
         #if minval < 0.0:
         #    nvec[:] = nvec - minval
         if negs > 0:
@@ -220,10 +220,10 @@ class OfdftRadial(object):
                     #potexpr = -self.Z/r
                     k = Constant(sqrt(5.0/9.0*self.CF)*(0.5*self.Z**3)**(1.0/3.0))
                     potexpr = (-self.Z/r * (1 - exp(-2*k*r)) - k*self.Z*exp(-2*k*r))
-                    print "== k (estimated):",sqrt(5.0/9.0*self.CF)*(0.5*self.Z**3)**(1.0/3.0)
+                    print("== k (estimated):",sqrt(5.0/9.0*self.CF)*(0.5*self.Z**3)**(1.0/3.0))
                 else:    
                     k = Constant(sqrt(5.0/9.0*self.CF)*n0**(1.0/3.0))
-                    print "== k value used:",sqrt(5.0/9.0*self.CF)*n0**(1.0/3.0)
+                    print("== k value used:",sqrt(5.0/9.0*self.CF)*n0**(1.0/3.0))
                     potexpr = self.felr.scalar_field_from_expr('(x[0] != 0.0)?(-Z/x[0] * (1.0 - exp(-2.0*k*x[0])) - k*Z*exp(-2.0*k*x[0])):(-3*k*Z)',k=k,Z=self.Z)
                     #potexpr = (-Z/r * (1 - exp(-2*k*r)) - k*Z*exp(-2*k*r))
 
@@ -269,7 +269,7 @@ class OfdftRadial(object):
             timer.stop()    
 
             u_i = project(Constant(mu) -potexpr - u_k,V)
-            print "MINIMUM VALUE",u_i.vector().min()
+            print("MINIMUM VALUE",u_i.vector().min())
 
             timer.start("Solve for hartree potential")
             r = SpatialCoordinate(self.felr.msh)[0]
@@ -294,7 +294,7 @@ class OfdftRadial(object):
             timer.start("Calculating error")
             avg = sum(du.vector().array())/len(du.vector().array())
             eps = numpy.linalg.norm(du.vector().array()-avg, ord=numpy.Inf)
-            print 'Iter',self.iters,'norm:', eps
+            print('Iter',self.iters,'norm:', eps)
             timer.stop()
 
             timer.start("calculate electron density (step1)")
@@ -408,10 +408,10 @@ class OfdftRadial(object):
                 if n0 <= 0.0:
                     k = Constant(sqrt(5.0/9.0*self.CF)*(0.5*self.Z**3)**(1.0/3.0))
                     potexpr = (-self.Z/r * (1 - exp(-2*k*r)) - k*self.Z*exp(-2*k*r))
-                    print "== k (estimated):",sqrt(5.0/9.0*self.CF)*(0.5*self.Z**3)**(1.0/3.0)
+                    print("== k (estimated):",sqrt(5.0/9.0*self.CF)*(0.5*self.Z**3)**(1.0/3.0))
                 else:    
                     k = Constant(sqrt(5.0/9.0*self.CF)*n0**(1.0/3.0))
-                    print "== k value used:",sqrt(5.0/9.0*self.CF)*n0**(1.0/3.0)
+                    print("== k value used:",sqrt(5.0/9.0*self.CF)*n0**(1.0/3.0))
                     potexpr = self.felr.scalar_field_from_expr('(x[0] != 0.0)?(-Z/x[0] * (1.0 - exp(-2.0*k*x[0])) - k*Z*exp(-2.0*k*x[0])):(-3*k*Z)',k=k,Z=self.Z)
                     
                 timer.stop()                                
@@ -433,14 +433,14 @@ class OfdftRadial(object):
             timer.start("Handle chemical potential")
             u_i = project(Constant(mu) - funcpots -potexpr - u_k,V)
             minval = u_i.vector().min()
-            print "Minval",minval
+            print("Minval",minval)
             if minval < 0.0:
                 #u_k.vector()[:]=-minval
                 mu-=minval-1e-10
             timer.stop()    
 
             u_i = project(Constant(mu) - funcpots -potexpr - u_k,V)
-            print "MINIMUM VALUE",u_i.vector().min()
+            print("MINIMUM VALUE",u_i.vector().min())
 
             timer.start("Solve for hartree potential")
             r = SpatialCoordinate(self.felr.msh)[0]
@@ -465,7 +465,7 @@ class OfdftRadial(object):
             timer.start("Calculating error")
             avg = sum(du.vector().array())/len(du.vector().array())
             eps = numpy.linalg.norm(du.vector().array()-avg, ord=numpy.Inf)
-            print 'Iter',self.iters,'norm:', eps
+            print('Iter',self.iters,'norm:', eps)
             timer.stop()
 
             # The adjustment of mu isn't very fundamental, there will be a component of mu hidden as an offset in v_h,
@@ -473,7 +473,7 @@ class OfdftRadial(object):
             timer.start("Handle chemical potential")
             u_i = project(Constant(mu) - funcpots -potexpr - u_k,V)
             minval = u_i.vector().min()
-            print "HUH",minval
+            print("HUH",minval)
             if minval < 0.0:
                 #u_k.vector()[:]=-minval
                 mu-=minval-1e-14
@@ -556,18 +556,14 @@ class OfdftRadial(object):
         
         def outer_boundary(x, on_boundary):
             return on_boundary and near(x[0],self.rs[-1])
-        
-        #u_k = Function(V)
-        #self.prepare_starting_density()
-        #u_k.assign(self.n)
-        #u_k.vector()[:]=u_k.vector() + 0.1
+
         u_k = self.felr.scalar_field_from_expr('rho0*(end-x[0])',rho0=0.5*self.Z**3,end=self.rs[-1])
-        #u_k = self.felr.scalar_field_from_expr('rho0*pow(x[0],(-3.0/2.0))',Z=self.Z,fac=1.8,rho0=0.1*self.Z**3)
+
         intn = self.felr.integrate_scalar_field(u_k)
-        print "Density integrated before adjustment:",intn
+        print("Density integrated before adjustment:",intn)
         u_k.vector()[:] = u_k.vector()*self.N/intn  
         intn = self.felr.integrate_scalar_field(u_k)
-        print "Density integrated after first adjustment:",intn        
+        print("Density integrated after first adjustment:",intn)    
         
         #u_k = interpolate(Constant(self.Z/self.felr.vol), V)  # previous (known) u
         u_k_pre = Function(V)
@@ -593,11 +589,6 @@ class OfdftRadial(object):
             rhs.assign(u_k)
             feradial.solve_radial_poisson(self.felr,v_h,rhs,Z=0,boundaryexpr=self.felr.expression("Z/x[0]",Z=self.Z))
 
-            #nvec = u_k.vector()
-            #negs =(nvec<0.0).sum()
-            #minval = nvec.min()
-            #print "** Number of negative density elements:",negs,"min value",minval
-
             potexpr = 0
             timer.start("Calculate functionals")
             densobj = DensityRadialWeakForm(u_k,v)
@@ -607,59 +598,25 @@ class OfdftRadial(object):
 
             # Why is this needed?!
             r = SpatialCoordinate(msh)[0]
-            #t = Function(V)
-            #t = project(v_h - self.Z/r,V)
-
-            #pylab.clf()
-            #drawgrid = numpy.logspace(0.1,1.2,100)
-            #drawgrid -= drawgrid[0]
-            #yvals = [-t(r) for r in drawgrid]
-            #yvals2 = [v_h(r) for r in drawgrid]
-            #pylab.loglog(drawgrid,yvals,'bx-')
-            #pylab.loglog(drawgrid,yvals2,'ro-')
-            #pylab.title("v_H")
-            #gui.pause()
+           
 
             F = potexpr*dx + (-self.Z/r + v_h)*v*dx
-            #F = ((5.0/3.0)*self.CF*pow(u_k,(2.0/3.0)) + t)*v*dx
 
-            #bce = Constant(0.0)
-            ##bce = 1.0/(self.rs[-1]**6)
-            #bc0 = DirichletBC(V, bce, outer_boundary)
-            #bcs_du = [bc0]
             bcs_du = []
 
             J = derivative(F, u_k, du_)
             A, b = assemble_system(J, -F, bcs_du)
             solve(A, du.vector(), b, tol=1e-12)
 
-            #pylab.clf()
-            #drawgrid = numpy.logspace(0.5,3,100)
-            ##drawgrid -= drawgrid[0]
-            #yvals = [du(r) for r in drawgrid]
-            ##pylab.loglog(drawgrid,yvals,'bx-')
-            #pylab.plot(drawgrid,yvals,'bx-')
-            #print "CHECK",du(0),du(self.rs[-1])
-            #pylab.title("dn")
-            #gui.pause()
 
             mu = self.felr.integrate_scalar_field(du)
             du.vector()[:] = du.vector() - (mu/(self.felr.vol))
-            print "Mu",mu
+            print("Mu",mu)
             
-            #tot = sum(du.vector().array())
             eps = self.felr.integrate_scalar_field(abs(du))#/self.felr.vol
-            print 'Iter',self.iters,'norm:', eps
+            print('Iter',self.iters,'norm:', eps)
 
             step = omega
-            #if eps < 1000:
-            #    tmp.vector()[:] = numpy.divide(u_k.vector(),du.vector())
-            #    tmpvec = tmp.vector()
-            #    maxstep = tmpvec[tmpvec>0.0].min()    
-            #    maxstep = max(maxstep,1e-8)
-            #
-            #    if step > maxstep:
-            #        step = maxstep
             
             u_.vector()[:] = u_k.vector() + step*du.vector()
             u_k.assign(u_)
@@ -667,7 +624,7 @@ class OfdftRadial(object):
             nvec = u_k.vector()
             negs =(nvec<=0.0).sum()
             minval = nvec.min()
-            print "Number of negative density elements:",negs,"min value",minval
+#            print "Number of negative density elements:",negs,"min value",minval
             #if minval <= 0.0:
             #    nvec[:] = nvec - minval 
             if negs > 0:
@@ -1271,14 +1228,6 @@ class OfdftRadial(object):
                 print "|dn|=",err
                 if err < self.params['eps']:
                     converged = True
-    #             if len(absdns)>1 and err > absdns[-1] and err > absdns[-2]:
-    #                 basestep = basestep / 1.5
-    #             elif len(absdns)>0 and err > absdns[-1]:
-    #                 basestep = basestep / 1.1
-    #             elif len(absdns)>3 and err < absdns[-1] and err < absdns[-2] and err < absdns[-3]:
-    #                 basestep = basestep * 1.1
-                #print "CHECK",err,absdns[-2]
-                #gui.pause()
                 
                 # Overengineered step control should force convergence in almost any situation
                 if (len(absdns)>1 and err > absdns[-2]):
@@ -1329,61 +1278,22 @@ class OfdftRadial(object):
                     backtrack_step = False
     
                 step = basestep
-                #if err < 0.1:
-                #step = basestep*err**(1.0/16.0) 
-                #if err < 1.0:
-                #    step = basestep*err**(1.0/25.0) 
-                #else:
-                #    step = basestep
-                #step = basestep*err**(1.0/32.0) 
                 print "== Step length: ",step
                 lasterr = err
                         
-                # Maxstep algorithm has very bad convergence rate
-                #tmp2.vector()[:] = numpy.divide(n.vector(),dn.vector())
-                #tmp2vec = tmp2.vector()
-                #maxstep = tmp2vec[tmp2vec>0.0].min()    
-                #maxstep = max(maxstep,1e-8)
-                #print "******************************MAXSTEP:",maxstep,step,maxstep < step
-                #if maxstep < step:
-                #    step = maxstep
-                    
-                #intn = self.felr.integrate_scalar_field(dn)
-                #print "************ Integrated density step:",intn
-                #intn = self.felr.integrate_scalar_field(n)
-                #print "************ Integrated density before:",intn
-    
+   
                 timer.start("Taking density step")
                 prevn.assign(n)
-                # DEBUG TEST
                 n.vector()[:] = n.vector() - step * dn.vector()
-                #n.vector()[:] = n.vector() - step * 2.0/pi*numpy.arctan(n.vector()*1e12) * dn.vector()
                 precorrn.assign(n)
                 
-                #intn = self.felr.integrate_scalar_field(tmp)
-                #previntn = intn
-                #while abs(intn)-self.N > 1e-12:
-                #    tmp2.vector()[:] = tmp2.vector() - ((intn - self.N)/(self.felr.vol))
-                #    intn = self.felr.integrate_scalar_field(tmp2)
-                #    if abs(intn)-self.N >= abs(previntn)-self.N:
-                #        print "final dens adj step:",intn,previntn
-                #        break 
-                #    tmp.assign(tmp2)
-                #    print "dens adj step:",intn,mu
-                #    previntn = intn
-                #
-                #intn = self.felr.integrate_scalar_field(tmp)
-                #print "************ Integrated density afrer:",intn
+
                             
                 timer.start("Computing gradients and laplacian")
                 gradn, lapln = self.felr.grad_lapl(n)
                 timer.stop()
             
-                #print "== Prepare comparing density"
-                #i = 0
-                #compare = Expression('rho0*exp(-2.0*Z*sqrt((x[0]-ax)*(x[0]-ax) + (x[1]-ay)*(x[1]-ay) + (x[2]-az)*(x[2]-az)))',Z=atoms[i],ax=cartcoords[i][0],ay=cartcoords[i][1],az=cartcoords[i][2],rho0=tmp(cartcoords[i]),element = V.ufl_element())
-                #compare = interpolate(compare,V)
-                #print "== Finished"
+
                 timer.start("Calculating energies")
                 self.calculate_energies()
                 data = ['i:%d'%(self.iters,),'$|dn|$: %.4e'%(err,),'step: %.4e'%(step,),'bad steps: %d'%(trouble_steps,),'','$n(max)$:%.4e'%(n([self.rs[-1]]),),'$n(r_1)/Z_1^3$:%.4f'%(n([0])/self.Z**3,),
@@ -1427,40 +1337,14 @@ class OfdftRadial(object):
                 print "Number of negative density elements:",negs,"min value",minval
                 if minval < 0.0:
                     nvec[:] = nvec - minval
-#                 if negs > 0:
-#                     nvec[nvec<0] = 0.0
-#     
-#                     tmp3.assign(n)
-#                     nvec = tmp3.vector()
-#                     intn = self.felr.integrate_scalar_field(tmp3)
-#                     previntn = intn
-#                     while intn > self.N:
-#                         minval = nvec[nvec>0].min()
-#                         nvec[nvec<=minval]=0.0
-#                         intn = self.felr.integrate_scalar_field(tmp3)
-#                         if abs(intn)-self.N >= abs(previntn)-self.N:
-#                             print "final dens adj step:",intn,previntn
-#                             break 
-#                         n.assign(tmp3)
-#                         print "dens adj step:",intn
-#                         previntn = intn
+
             
                 intn = self.felr.integrate_scalar_field(n)
                 print "Electrons before final correction:",intn
                 n.vector()[:] = n.vector()*self.N/intn    
                 intn = self.felr.integrate_scalar_field(n)
                 print "Electrons after final correction:",intn
-                #if abs(intn - self.N) > 1e-6: 
-                #    minval = n.vector().min()
-                #    adjustment = (intn - self.N)/self.felr.vol
-                #    if adjustment < minval and minval > 0.0:
-                #        n.vector()[:] = n.vector() - adjustment
-                #    else:
-                #        n.vector()[:] = n.vector()*self.N/intn    
-                #
-                #    intn = self.felr.integrate_scalar_field(n)
-                #    print "Electrons after final correction:",intn
-                    
+                                    
                 timer.stop()
     
                 timer.start("Plotting")
@@ -1526,32 +1410,5 @@ class OfdftRadial(object):
 
         self.e_tot = self.e_ionion + self.e_ionelec + self.e_elecelec + self.e_functional
 
-    def print_energies(self):            
-        print "Solution found in",self.iters,"iterations."
-        if self.params['evunits']:
-            convfact =      self.hartree2ev           
-            print "==== Resulting energies (eV): ================"
-        else:
-            convfact = 1.0
-            print "==== Resulting energies (hartree): ==========="
-        print "Ion-ion:        % 10.4f"%(self.e_ionion*convfact,)
-        print "Ion-elec:       % 10.4f"%(self.e_ionelec*convfact,)
-        print "Elec-elec (Eh): % 10.4f"%(self.e_elecelec*convfact,)
-        print "Functional:     % 10.4f"%(self.e_functional*convfact,)
-        print "=============================================="
-        print "Total energy:   % 10.4f"%(self.e_tot*convfact,)
-        print "=============================================="
-        print
-        #print "==== Some other data:"
-        #print "n(r_1)/Z_1^3:",self.n([0.0])/self.Z**3
-        #print "-E/Z_1^(7/3):",-(self.e_ionelec+self.e_elecelec+self.e_functional)/self.Z**(7.0/3.0)
-        #print "-T/E:",(-self.e_functional)/(self.e_tot)
-        #print "-E/E_TF:",(self.e_ionelec+self.e_elecelec+self.e_functional)/(-0.768745*self.Z**(7.0/3.0)),"(",(-0.768745*self.Z**(7.0/3.0))*convfact,":",((-0.768745*self.Z**(7.0/3.0))-self.e_tot)/(-0.768745*self.Z**(7.0/3.0)),")"
-        #print "===="
-        #print
-        intn = self.felr.integrate_scalar_field(self.n)
-        print "Number of electrons:",intn
-        #drawgrid = numpy.r_[0:10:0.1]
-        #gui.plot_radial(drawgrid,self.n)
-        #gui.pause()
+    
         

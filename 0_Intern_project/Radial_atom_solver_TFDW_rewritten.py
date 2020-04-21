@@ -228,8 +228,6 @@ N = Z # Neutral
 #N = Z # Neutral 
 
 
-
-
 """-------------------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------------------- 
                     Creating and defining the boundary conditions
@@ -263,11 +261,11 @@ bcs = [bc_L, bc_R]
 ----------------------------------------------------------------------------------------------
 -------------------------------------------------------------------------------------------"""
 #---constants---
-lamb = 1/5
+lamb = 1/9
 C1 = 3/10*(3*math.pi**2)**(2/3)
 C2 = 3/4*(3/math.pi)**(1/3)
 C3 = lamb/8
-mu = 0
+mu = 1
 omega = Constant(1)
 
 A_ = 4*C3
@@ -276,7 +274,7 @@ D_ = (4/3)*C2
 
 A__ = (5/3)*(C1/C3)
 B__ = 4/3
-C__ = 1/C3
+C__ =  1/C3
 
 #----- External Potential ----
 
@@ -285,8 +283,10 @@ Ex = -Z/r
 
 #------ Initial density ------
 
-#n_i = Expression('a*exp(-b*pow(x[0], 2))', degree = 2, a = 1/sqrt(2*pi), b=0.1)
-n_i = Constant(1)
+n_i = Expression('a*exp(-b*pow(x[0], 2))', degree = 2, a = 1, b=0.1)
+#n_i = Expression('pow(x[0],2)', degree = 2)
+#n_i = Constant(0.1)
+
 
 nlast = Function(V)
 
@@ -313,20 +313,23 @@ du_trial = TrialFunction(W)
 du = Function(W)
 
 # Put the initial density and v_h in u_k
+
 u_k = Function(W)
 assign(u_k.sub(0), v_h)
 assign(u_k.sub(1), u_n)
 
 
 bcs_du = []
+
 eps = 1
 iters = 0
-maxiter = 1000
+maxiter = 50
 minimal_error = 1E-9
 
 while eps > minimal_error and iters < maxiter:
     iters += 1 
-      
+    
+    #plotting_solve_result(u_n)      
 
     (v_hk, u_nk) = split(u_k)
     
@@ -359,28 +362,14 @@ while eps > minimal_error and iters < maxiter:
             + Q.dx(0)*pr.dx(0)*dx       \
             - 1/h*Q.dx(0)*pr*dx         \
             - 16*math.pi*y**2*pr*dx)
-    
-    ## Variational equation without rotational transformation --
-         #--- Rewriting variables for overview ---
-    U_ = sqrt(u_nk)
-    E_ = (-Ex - v_hk - mu)
-    
-    F= A_*U_.dx(0)*qr.dx(0)*dx      \
-        + B_*u_nk**(7/6)*qr*dx      \
-        + D_*u_nk*(5/6)*qr*dx       \
-        + E_*U_*qr*dx
-    
-    # Poisson equation of hatree potential 
-    F = F -(                        \
-        + v_hk.dx(0)*pr.dx(0)*dx    \
-        - 4*math.pi*u_nk*pr*dx)
+
    """    
     ## Variational equation With Radial transformation 
        #--- Rewriting variables for overview ---
     U_ = sqrt(u_nk)
     E_ = (-Ex - v_hk - mu)
     
-    F = - A_*U_.dx(0)*qr.dx(0)*dx   \
+    F = - U_.dx(0)*qr.dx(0)*dx   \
         + 2*A_*(1/r)*U_.dx(0)*qr*dx \
         + B_*u_nk**(7/6)*qr*dx      \
         + D_*u_nk**(5/6)*qr*dx      \
@@ -393,7 +382,7 @@ while eps > minimal_error and iters < maxiter:
     #Poisson equation of Hatree potential
     F = F -(                          \
         - v_hk.dx(0)*pr.dx(0)*dx    \
-        + 2*(1/r)*v_hk.dx(0)*pr*dx  \
+        + (2/r)*v_hk.dx(0)*pr*dx  \
         + 4*math.pi*u_nk*pr*dx)
     
     
@@ -421,8 +410,9 @@ while eps > minimal_error and iters < maxiter:
             raise Exception("Residual error is NaN")
 
      #---- Taking the step for u_n and v_h ------------
-    assign(nlast, u_k.sub(1))
+    
     u_k.vector()[:] = u_k.vector()[:] + omega*du.vector()[:]
+    assign(nlast, u_k.sub(1))
     
     # Conserve memory by reusing vectors for u_n, v_h also as du_n, dv_h
     v_h = dv_h 
@@ -461,9 +451,18 @@ while eps > minimal_error and iters < maxiter:
 
 
 plotting_solve_result(u_n)
-#plotting_solve_result(v_h)
+plotting_solve_result(v_h)
 
 
+u = TrialFunction(V)
+v = TestFunction(V)        
+a = u*v*dx
+# Works but with oscillations
+L = (-1.0/(4.0*pi))*(2/r*v_h.dx(0)*v-v_h.dx(0)*v.dx(0))*dx
+solve(a == L, u_n ,bcs)
+
+plotting_solve_result(u_n)
+"""
 #------------------------- calculate v_h
 calc_vh = Function(V)
 rhs = Function(V)
@@ -472,7 +471,7 @@ calc_vh.vector()[:]=0
     
 u = TrialFunction(V)
 v = TestFunction(V)
-a = dot(grad(u), grad(v))*dx
+a = u*v*dx
 L = rhs*v*dx
 
 A,b = assemble_system(a, L, bcs)
@@ -480,7 +479,6 @@ A,b = assemble_system(a, L, bcs)
 solve(A, calc_vh.vector(), b)
 v_h = calc_vh
 #---------------------------------solve for u_n from v_h
-bsc = []
 a = u*v*dx
 L = (1.0/(4.0*pi))*inner(grad(v_h),grad(v))*dx
 solve(a == L, u_n,bcs)
@@ -488,3 +486,4 @@ solve(a == L, u_n,bcs)
 #u_n = r*sqrt(u_n)
 plotting_solve_result(u_n)
 plotting_solve_result(v_h)
+"""

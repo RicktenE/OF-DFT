@@ -29,9 +29,9 @@ plt.close('all')
 ----------------------------------------------------------------------------------------------
 -------------------------------------------------------------------------------------------""" 
 # Create mesh and define function space
-start_x = 0
-end_x = 100
-amount_vertices = 50
+start_x = 0.0
+end_x = 20
+amount_vertices = 20
 mesh = IntervalMesh(amount_vertices,start_x, end_x) # Splits up the interval [0,1] in (n) elements 
 V = FunctionSpace(mesh, 'P', 1) # P stands for lagrangian elemnts, number stands for degree
 r = SpatialCoordinate(mesh)[0] # r are the x coordinates. 
@@ -140,9 +140,10 @@ u  = Function(V)  # u = u_k + omega*du
 omega = 1.0       # relaxation parameter
 eps = 1.0
 
+
 #Initiate loop for convergence on value for u
 iter = 0
-maxiter = 25
+maxiter = 500
 while eps > tol and iter < maxiter:
     iter += 1
     A, b = assemble_system(J, -F, bcs_du)
