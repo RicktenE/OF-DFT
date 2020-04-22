@@ -21,7 +21,6 @@ import numpy as np
 from dolfin import *
 import matplotlib as mpl
 from matplotlib import pyplot as plt
-from petsc4py import *
 
 plt.close('all')
 
@@ -33,10 +32,6 @@ plt.close('all')
 
 
 def plotting_solve_result(u):
-    #x = sqrt(r)
-    #xvals = [np.linspace(sqrt(i),20) for i in range(20)]
-    xvals = np.sqrt(np.linspace(0,20))
-    #plt.xticks(xvals)
     if u == v_h :
         
         plt.figure()
@@ -270,7 +265,7 @@ omega = Constant(1)
 
 A_ = 4*C3
 B_ = (-5/3)*C1
-D_ = (4/3)*C2
+D_ = 1#(4/3)*C2
 
 A__ = (5/3)*(C1/C3)
 B__ = 4/3
@@ -283,8 +278,8 @@ Ex = -Z/r
 
 #------ Initial density ------
 
-#n_i = Expression('a*exp(-b*pow(x[0], 2))', degree = 2, a = 1, b=0.1)
-n_i = Expression('pow(x[0],2)', degree = 2)
+n_i = Expression('a*exp(-b*pow(x[0], 2))', degree = 2, a = 1, b=0.1)
+#n_i = Expression('pow(x[0],2)', degree = 2)
 #n_i = Constant(1)
 
 
@@ -323,7 +318,7 @@ bcs_du = []
 
 eps = 1
 iters = 0
-maxiter = 100
+maxiter = 200
 minimal_error = 1E-9
 
 while eps > minimal_error and iters < maxiter:
@@ -341,41 +336,19 @@ while eps > minimal_error and iters < maxiter:
             funcpots += f.potential_weakform(densobj)
             
     #---- Solving v_h and u_n ----------------------
-    """
-    ## Variational equation as taken directly from paper
-        #Rewriting variables for overview
-    h = sqrt(r)
-    y = r*sqrt(u_nk)
-    Q = r*(Ex + v_hk)
-       
-    ##First PDE from paper
-    F = y.dx(0)*qr.dx(0)*dx             \
-        - y.dx(0)/h*qr*dx             \
-        + A__*y**(7/3) / h**(2/3)*qr*dx   \
-        - B__*y**(5/3)*h**(2/3)*qr*dx   \
-        + C__*(mu*r-Q)*y*qr*dx
-        
-    ## Second PDE from paper
-    F = F -(                            \
-            + Q.dx(0)*pr.dx(0)*dx       \
-            - 1/h*Q.dx(0)*pr*dx         \
-            - 16*math.pi*y**2*pr*dx)
-
-   """    
+   
     ## Variational equation With Radial transformation 
-       #--- Rewriting variables for overview ---
+    #--- Rewriting variables for overview ---
     U_ = sqrt(u_nk)
     E_ = (-Ex - v_hk - mu)
     
-    F = - U_.dx(0)*qr.dx(0)*dx   \
+    F = - U_.dx(0)*qr.dx(0)*dx      \
         + 2*A_*(1/r)*U_.dx(0)*qr*dx \
         + B_*u_nk**(7/6)*qr*dx      \
         + D_*u_nk**(5/6)*qr*dx      \
-        + E_*U_*qr*dx
-        
-        #- Ex*U_*qr*dx              \
-        #- v_hk*U_*qr*dx            \
-        #- mu*U_*qr*dx
+        - Ex*U_*qr*dx              \
+        - v_hk*U_*qr*dx            \
+        + mu*U_*qr*dx
     
     #Poisson equation of Hatree potential
     F = F -(                          \
@@ -402,7 +375,7 @@ while eps > minimal_error and iters < maxiter:
     u_n = None                  #empty u_n
     
     #---- Calculate the Error -----------------------
-    avg = sum(dv_h.vector().get_local())/len(dv_h.vector().get_local())
+    avg = sum(du.vector().get_local())/len(du.vector().get_local())
     eps = np.linalg.norm(du.vector().get_local()-avg, ord=np.Inf)
     if math.isnan(eps):
             raise Exception("Residual error is NaN")
@@ -410,8 +383,7 @@ while eps > minimal_error and iters < maxiter:
      #---- Taking the step for u_n and v_h ------------
     
     u_k.vector()[:] = u_k.vector()[:] + omega*du.vector()[:]
-    assign(nlast, u_k.sub(1))
-    
+        
     # Conserve memory by reusing vectors for u_n, v_h also as du_n, dv_h
     v_h = dv_h 
     assign(v_h, u_k.sub(0))
@@ -435,15 +407,8 @@ while eps > minimal_error and iters < maxiter:
         assign(u_k.sub(1),u_n)
         print("Number of electrons after correction:",intn)
         
-    
-   
-    #------- Calculate v_h allignment correction 
-    vh_align = float(assemble((v_h)*dx(mesh)))
-    mu_new = mu - vh_align
-    
-    v_h.vector()[:] += vh_align
-    vh_align = 0.0
     print('Check end of loop, iteration: ', iters,' Error: ', eps)
+    
     
     #---- vh -> u_n
     u = TrialFunction(V)
