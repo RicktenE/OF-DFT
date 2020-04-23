@@ -30,55 +30,41 @@ plt.close('all')
 ----------------------------------------------------------------------------------------------
 -------------------------------------------------------------------------------------------"""
 
+def plotting_solve_result_normal(u,title):
+    r = (mesh.coordinates())
+    x = np.sqrt(r)
+    y = [v*sqrt(u(v)) for v in r]
+    
+    #x = r
+    #y = [u(v) for v in r]
+    
+    plt.figure()
+    plt.title(title)
+    plt.xlabel("Radial coordinate")
+    plt.ylabel(title)
+    plt.grid()
+    #plt.plot(x,y)
+    plot(u)
+    # show the plots
+    plt.show()
+    return 
 
-def plotting_solve_result(u):
-    if u == v_h :
-        
-        r = (mesh.coordinates())
-        x = np.sqrt(r)
-        y = r*np.sqrt(np.array(v_h.vector()))
-        plt.figure()
-        plt.title("Last calculated density u_n")
-        plt.xlabel("Radial coordinate")
-        #mpl.scale.LogScale(r)
-        plt.ylabel("Density [n]")
-        plt.grid()
-        plt.plot(x,y)
-        
-    elif u == u_n :
-        r = (mesh.coordinates())
-        x = np.sqrt(r)
-        y = r*np.sqrt(np.array(u_n.vector()))
-        plt.figure()
-        plt.title("Last calculated density u_n")
-        plt.xlabel("Radial coordinate")
-        #mpl.scale.LogScale(r)
-        plt.ylabel("Density [n]")
-        plt.grid()
-        plt.plot(x,y)
-        
-    elif u == nr :
-        plt.figure()
-        plt.title("nr")
-        plt.xlabel("Radial coordinate")
-        plt.ylabel("projection of Z/(4.0*pi)*gr.dx(0)/r ")
-        plt.grid()
-        #if mesh_bool == True :
-        #    plot(mesh)
-        plot(nr)
-        
-    elif u == gr:
-         plt.figure(1)
-         plt.title("gr")
-         plt.xlabel("Radial coordinate")
-         plt.ylabel("projection of derivative of n towards r")
-         plt.grid()
-         #if mesh_bool == True :
-         #   plot(mesh)
-         plot(gr)
-    else :
-        print("The input to plot is invalid")
-        
+
+def plotting_solve_result(u,title):
+    r = (mesh.coordinates())
+    x = np.sqrt(r)
+    y = [v*sqrt(u(v)) for v in r]
+    
+    #x = r
+    #y = [u(v) for v in r]
+    
+    plt.figure()
+    plt.title(title)
+    plt.xlabel("Radial coordinate")
+    plt.ylabel(title)
+    plt.grid()
+    plt.plot(x,y)
+    #plot(u)
     # show the plots
     plt.show()
     return 
@@ -198,9 +184,11 @@ functionals = [TF(),\
 -------------------------------------------------------------------------------------------""" 
 # Create mesh and define function space
 start_x = 0.5
-end_x = 9
+end_x = 6
 amount_vertices = 200
 mesh = IntervalMesh(amount_vertices,start_x, end_x) # Splits up the interval [0,1] in (n) elements 
+
+print("MES COORDS",np.shape(mesh.coordinates()))
 
 #Creation of Function Space
 P1 = FiniteElement("P", mesh.ufl_cell(), 2)
@@ -280,7 +268,7 @@ Ex = -Z/r
 
 #------ Initial density ------
 
-n_i = Expression('a*exp(-b*pow(x[0], 2))', degree = 2, a = 1, b=0.1)
+n_i = Expression('a*exp(-b*pow(x[0], 2))', degree = 2, a = 1, b=1.0)
 #n_i = Expression('pow(x[0],2)', degree = 2)
 #n_i = Constant(1)
 
@@ -344,7 +332,7 @@ while eps > minimal_error and iters < maxiter:
     U_ = sqrt(u_nk)
     E_ = (-Ex - v_hk - mu)
     
-    F = - U_.dx(0)*qr.dx(0)*dx      \
+    F = - A_*U_.dx(0)*qr.dx(0)*dx      \
         + 2*A_*(1/r)*U_.dx(0)*qr*dx \
         + B_*u_nk**(7/6)*qr*dx      \
         + D_*u_nk**(5/6)*qr*dx      \
@@ -364,9 +352,23 @@ while eps > minimal_error and iters < maxiter:
     
     #Assemble system
     A, b = assemble_system(J, -F, bcs_du)
-       
-    solve(A, du.vector(), b)
+
+    #nvec = u_k.sub(1).vector()
+    rvec = mesh.coordinates()
+    nvec = np.array([v_hk(v) for v in rvec])
+    minval = nvec.min()
+    print("v_hk minimum:",minval)
+
+    rvec = mesh.coordinates()
+    nvec = np.array([u_nk(v) for v in rvec])
+    minval = nvec.min()
+    print("u_nk minimum:",minval)    
     
+    #plotting_solve_result(v_hk,"v_nk pre solver")
+    plotting_solve_result_normal(u_nk,"u_nk pre solver")
+    
+    solve(A, du.vector(), b)
+
     # Conserve memory by reusing vectors for v_h and u_n to keep dv_h and du_n
     dv_h = v_h                  #step to transfer type info to dv_h
     assign(dv_h, du.sub(0))     #step to transfer values to dv_h
@@ -375,6 +377,9 @@ while eps > minimal_error and iters < maxiter:
     du_n = u_n                  #step to transfer type info to du_n
     assign(du_n, du.sub(1))     #step to transfer values to du_n
     u_n = None                  #empty u_n
+
+    #plotting_solve_result(dv_h,"dv_h")
+    plotting_solve_result(du_n,"du_n") 
     
     #---- Calculate the Error -----------------------
     avg = sum(du.vector().get_local())/len(du.vector().get_local())
@@ -382,6 +387,8 @@ while eps > minimal_error and iters < maxiter:
     if math.isnan(eps):
             raise Exception("Residual error is NaN")
 
+    print("EPS is:",eps)
+        
      #---- Taking the step for u_n and v_h ------------
     
     u_k.vector()[:] = u_k.vector()[:] + omega*du.vector()[:]
@@ -394,21 +401,28 @@ while eps > minimal_error and iters < maxiter:
     u_n = du_n 
     assign(u_n, u_k.sub(1))
     du_n = None  
-                      
+
+    plotting_solve_result(u_n,"density")
+    
     #---- Ad hoc negative density fix -------
     #print('check for negative u_n before', u_n.vector().get_local())
     omega = 1 
     nvec = u_n.vector()
     minval = nvec.min()
+    print("Going to add:",minval+0.5)
     if minval <= 0.0:
-        nvec[:]=nvec[:]-minval+1
+        nvec[:]=nvec[:]-minval+0.5
         intn = float(assemble((u_n)*dx(mesh)))
         print("Number of electrons before correction:",intn)
         nvec[:] = nvec[:]*N/intn    
         intn = float(assemble((u_n)*dx(mesh)))            
         assign(u_k.sub(1),u_n)
         print("Number of electrons after correction:",intn)
-        
+
+    nvec = u_k.sub(1).vector()
+    minval = nvec.min()
+    print("Minval after correction:",minval)
+    
     print('Check end of loop, iteration: ', iters,' Error: ', eps)
     
     
@@ -416,11 +430,11 @@ while eps > minimal_error and iters < maxiter:
     #u = TrialFunction(V)
     #v = TestFunction(V)        
     #a = u*v*dx
-    ## Works but with oscillations
+    # Works but with oscillations
     #L = (-1.0/(4.0*pi))*(2/r*v_h.dx(0)*v-v_h.dx(0)*v.dx(0))*dx
     #solve(a == L, u_n ,bcs)
     
-    plotting_solve_result(u_n)
+    #plotting_solve_result(u_n)
     #plotting_solve_result(v_h)
     
 
