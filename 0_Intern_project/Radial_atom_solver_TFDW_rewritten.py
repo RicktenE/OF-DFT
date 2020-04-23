@@ -34,26 +34,28 @@ plt.close('all')
 def plotting_solve_result(u):
     if u == v_h :
         
-        plt.figure()
-        plt.title("Last calculated Internal potential v_h")
-        plt.xlabel("Radial coordinate")
-        plt.ylabel("Internal potential Vi")
-        plt.grid()
-        #if mesh_bool == True :
-        #    plot(mesh)
-        plot(v_h)
-        
-    elif u == u_n :
+        r = (mesh.coordinates())
+        x = np.sqrt(r)
+        y = r*np.sqrt(np.array(v_h.vector()))
         plt.figure()
         plt.title("Last calculated density u_n")
         plt.xlabel("Radial coordinate")
         #mpl.scale.LogScale(r)
         plt.ylabel("Density [n]")
         plt.grid()
-        #if mesh_bool == True :
-        #    plot(mesh)
-        #plt.xticks(xvals)
-        plot(u_n)
+        plt.plot(x,y)
+        
+    elif u == u_n :
+        r = (mesh.coordinates())
+        x = np.sqrt(r)
+        y = r*np.sqrt(np.array(u_n.vector()))
+        plt.figure()
+        plt.title("Last calculated density u_n")
+        plt.xlabel("Radial coordinate")
+        #mpl.scale.LogScale(r)
+        plt.ylabel("Density [n]")
+        plt.grid()
+        plt.plot(x,y)
         
     elif u == nr :
         plt.figure()
@@ -195,8 +197,8 @@ functionals = [TF(),\
 ----------------------------------------------------------------------------------------------
 -------------------------------------------------------------------------------------------""" 
 # Create mesh and define function space
-start_x = 0.1
-end_x = 20
+start_x = 0.5
+end_x = 9
 amount_vertices = 200
 mesh = IntervalMesh(amount_vertices,start_x, end_x) # Splits up the interval [0,1] in (n) elements 
 
@@ -411,12 +413,12 @@ while eps > minimal_error and iters < maxiter:
     
     
     #---- vh -> u_n
-    u = TrialFunction(V)
-    v = TestFunction(V)        
-    a = u*v*dx
-    # Works but with oscillations
-    L = (-1.0/(4.0*pi))*(2/r*v_h.dx(0)*v-v_h.dx(0)*v.dx(0))*dx
-    solve(a == L, u_n ,bcs)
+    #u = TrialFunction(V)
+    #v = TestFunction(V)        
+    #a = u*v*dx
+    ## Works but with oscillations
+    #L = (-1.0/(4.0*pi))*(2/r*v_h.dx(0)*v-v_h.dx(0)*v.dx(0))*dx
+    #solve(a == L, u_n ,bcs)
     
     plotting_solve_result(u_n)
     #plotting_solve_result(v_h)
