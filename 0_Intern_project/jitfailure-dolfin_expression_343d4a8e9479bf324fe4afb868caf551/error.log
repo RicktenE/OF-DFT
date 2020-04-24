@@ -1,4 +1,0 @@
-/tmp/tmprx6_jllu/dolfin_expression_343d4a8e9479bf324fe4afb868caf551.cpp: In member function ‘virtual void dolfin::dolfin_expression_343d4a8e9479bf324fe4afb868caf551::eval(Eigen::Ref<Eigen::Matrix<double, -1, 1> >, Eigen::Ref<const Eigen::Matrix<double, -1, 1> >) const’:
-/tmp/tmprx6_jllu/dolfin_expression_343d4a8e9479bf324fe4afb868caf551.cpp:61:24: error: ‘Z’ was not declared in this scope
-           values[0] = -Z/x[0];
-                        ^

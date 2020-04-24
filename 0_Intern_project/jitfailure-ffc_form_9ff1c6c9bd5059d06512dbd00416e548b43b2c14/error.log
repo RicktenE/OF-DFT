@@ -1,7 +1,0 @@
-/tmp/tmp93aolj33/ffc_form_9ff1c6c9bd5059d06512dbd00416e548b43b2c14.cpp: In member function ‘virtual void ffc_form_9ff1c6c9bd5059d06512dbd00416e548b43b2c14_cell_integral_main_otherwise::tabulate_tensor(double*, const double* const*, const double*, int) const’:
-/tmp/tmp93aolj33/ffc_form_9ff1c6c9bd5059d06512dbd00416e548b43b2c14.cpp:99:18: error: redeclaration of ‘const double J_c0’
-     const double J_c0 = coordinate_dofs[0] * FE2_C0_D1_Q2[0][0][0] + coordinate_dofs[1] * FE2_C0_D1_Q2[0][0][1];
-                  ^~~~
-/tmp/tmp93aolj33/ffc_form_9ff1c6c9bd5059d06512dbd00416e548b43b2c14.cpp:95:18: note: ‘const double J_c0’ previously declared here
-     const double J_c0 = coordinate_dofs[0] * FE2_C0_D1_Q2[0][0][0] + coordinate_dofs[1] * FE2_C0_D1_Q2[0][0][1];
-                  ^~~~

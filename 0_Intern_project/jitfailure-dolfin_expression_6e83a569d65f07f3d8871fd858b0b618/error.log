@@ -1,4 +1,0 @@
-/tmp/tmpjxs44hlw/dolfin_expression_6e83a569d65f07f3d8871fd858b0b618.cpp: In member function ‘virtual void dolfin::dolfin_expression_6e83a569d65f07f3d8871fd858b0b618::eval(Eigen::Ref<Eigen::Matrix<double, -1, 1> >, Eigen::Ref<const Eigen::Matrix<double, -1, 1> >) const’:
-/tmp/tmpjxs44hlw/dolfin_expression_6e83a569d65f07f3d8871fd858b0b618.cpp:61:23: error: ‘right_value’ was not declared in this scope
-           values[0] = right_value;
-                       ^~~~~~~~~~~

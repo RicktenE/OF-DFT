@@ -1,4 +1,0 @@
-/tmp/tmpkria71ec/dolfin_expression_2c7edadd899aea84408748cca3acb990.cpp: In member function ‘virtual void dolfin::dolfin_expression_2c7edadd899aea84408748cca3acb990::eval(Eigen::Ref<Eigen::Matrix<double, -1, 1> >, Eigen::Ref<const Eigen::Matrix<double, -1, 1> >) const’:
-/tmp/tmpkria71ec/dolfin_expression_2c7edadd899aea84408748cca3acb990.cpp:61:26: error: ‘r’ was not declared in this scope
-           values[0] = -1/r;
-                          ^

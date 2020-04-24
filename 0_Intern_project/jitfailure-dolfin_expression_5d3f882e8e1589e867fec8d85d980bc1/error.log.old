@@ -1,4 +1,0 @@
-/tmp/tmpm5izfkdb/dolfin_expression_5d3f882e8e1589e867fec8d85d980bc1.cpp: In member function ‘virtual void dolfin::dolfin_expression_5d3f882e8e1589e867fec8d85d980bc1::eval(Eigen::Ref<Eigen::Matrix<double, -1, 1> >, Eigen::Ref<const Eigen::Matrix<double, -1, 1> >) const’:
-/tmp/tmpm5izfkdb/dolfin_expression_5d3f882e8e1589e867fec8d85d980bc1.cpp:61:23: error: ‘left_value’ was not declared in this scope
-           values[0] = left_value;
-                       ^~~~~~~~~~
