@@ -1,9 +1,0 @@
-[defuse]
-scale=2.70230835864891
-unitcell=[[1.0, 0.0, 0.0], [0.0,1.0,0.0], [0.0,0.0,1.0]]
-functionals=[(1.0,tf),(1.0,d),(1.0,w)]
-atoms=[H]
-coords=[[0.5, 0.5, 0.5]]
-pbc=[True, True, True]
-gui=False
-print_timings=True
