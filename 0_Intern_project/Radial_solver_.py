@@ -159,18 +159,15 @@ class Weizsacker(object):
 
 func_weizsacker = Weizsacker()
 
-functionals = [TF(),\
-               Dirac(),\
-               Weizsacker()\
-               ]      
+     
 """-------------------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------------------- 
                     Creating the mesh + Function Spaces + defining type of element
 ----------------------------------------------------------------------------------------------
 -------------------------------------------------------------------------------------------""" 
 # Create mesh and define function space
-start_x = 0.5
-end_x = 6
+start_x = 0.1
+end_x = 9
 amount_vertices = 200
 mesh = IntervalMesh(amount_vertices,start_x, end_x) # Splits up the interval [0,1] in (n) elements 
 
@@ -217,7 +214,7 @@ def boundary_R(x, on_boundary):
     return on_boundary and near(x[0], end_x, tol)
 
 #Defining expression on left boundary
-n_L = Expression('0', degree=1)         
+n_L = Expression('1', degree=1)         
 bc_L = DirichletBC(V, n_L, boundary_L)  
     
 #Defining expression on right boundary
@@ -290,11 +287,16 @@ assign(u_k.sub(0), v_h)
 assign(u_k.sub(1), u_n)
 
 
+functionals = [TF(),\
+               Dirac(),\
+               #Weizsacker()\
+               ] 
+
 bcs_du = []
 
 eps = 1
 iters = 0
-maxiter = 200
+maxiter = 10
 minimal_error = 1E-9
 
 while eps > minimal_error and iters < maxiter:
@@ -312,12 +314,26 @@ while eps > minimal_error and iters < maxiter:
             funcpots += f.potential_weakform(densobj)
             
     #---- Solving v_h and u_n ----------------------
-   
+    uniform_charge = N/4.0*pi                                    
+    """
+    # First coupled equation: nabla^2 v_h = -4 pi n(r)
+    F = -inner(grad(v_hk), grad(qr))*dx + (4.0*pi*u_nk - Constant(uniform_charge))*qr*dx 
+    # Second coupled equation: Ts[n] + Exc[n] + Vext(r) - mu = 0
+    F = F + funcpots*dx + Ex*pr*dx + v_hk*pr*dx - Constant(mu)*pr*dx
+    """
+    
+    #"""
+    # First coupled equation: nabla^2 v_h = -4 pi n(r)
+    F = - v_hk.dx(0)*qr.dx(0)*dx + (4*math.pi*u_nk - Constant(0))*qr*dx               
+         
+    # Second coupled equation: Ts[n] + Exc[n] + Vext(r) - mu = 0
+    F = F + funcpots*dx + Ex*pr*dx + v_hk*pr*dx - Constant(mu)*pr*dx
+    #"""
+    """
     ## Variational equation With Radial transformation 
     #--- Rewriting variables for overview ---
     U_ = sqrt(u_nk)
     E_ = (-Ex - v_hk - mu)
-    
     F = - A_*U_.dx(0)*qr.dx(0)*dx      \
         + 2*A_*(1/r)*U_.dx(0)*qr*dx \
         + B_*u_nk**(7/6)*qr*dx      \
@@ -331,7 +347,7 @@ while eps > minimal_error and iters < maxiter:
         - v_hk.dx(0)*pr.dx(0)*dx    \
         + (2/r)*v_hk.dx(0)*pr*dx  \
         + 4*math.pi*u_nk*pr*dx)
-    
+    """
     
     #Calculate Jacobian
     J = derivative(F, u_k, du_trial)
@@ -343,7 +359,7 @@ while eps > minimal_error and iters < maxiter:
     rvec = mesh.coordinates()
     nvec = np.array([v_hk(v) for v in rvec])
     minval = nvec.min()
-    print("v_hk minimum:",minval)
+#    print("v_hk minimum:",minval)
 
     rvec = mesh.coordinates()
     nvec = np.array([u_nk(v) for v in rvec])
@@ -365,7 +381,7 @@ while eps > minimal_error and iters < maxiter:
     u_n = None                  #empty u_n
 
     #plotting_sqrt(dv_h,"dv_h")
-    plotting_sqrt(du_n,"du_n") 
+    plotting_normal(du_n,"du_n") 
     
     #---- Calculate the Error -----------------------
     avg = sum(du.vector().get_local())/len(du.vector().get_local())
@@ -388,7 +404,7 @@ while eps > minimal_error and iters < maxiter:
     assign(u_n, u_k.sub(1))
     du_n = None  
 
-    plotting_sqrt(u_n,"density")
+    plotting_normal(u_n,"density")
     
     #---- Ad hoc negative density fix -------
     #print('check for negative u_n before', u_n.vector().get_local())
@@ -411,38 +427,3 @@ while eps > minimal_error and iters < maxiter:
     
     print('Check end of loop, iteration: ', iters,' Error: ', eps)
     
-    
-    #---- vh -> u_n
-    #u = TrialFunction(V)
-    #v = TestFunction(V)        
-    #a = u*v*dx
-    # Works but with oscillations
-    #L = (-1.0/(4.0*pi))*(2/r*v_h.dx(0)*v-v_h.dx(0)*v.dx(0))*dx
-    #solve(a == L, u_n ,bcs)
-    
-    #plotting_sqrt(u_n)
-    #plotting_sqrt(v_h)
-    
-
-"""
-#------------------------- calculate v_h
-calc_vh = Function(V)
-rhs = Function(V)
-rhs.assign(u_n)
-calc_vh.vector()[:]=0
-    
-u = TrialFunction(V)
-v = TestFunction(V)
-a = u*v*dx
-L = rhs*v*dx
-A,b = assemble_system(a, L, bcs)
-solve(A, calc_vh.vector(), b)
-v_h = calc_vh
-#---------------------------------solve for u_n from v_h
-a = u*v*dx
-L = (1.0/(4.0*pi))*inner(grad(v_h),grad(v))*dx
-solve(a == L, u_n,bcs)
-#u_n = r*sqrt(u_n)
-plotting_solve_result(u_n)
-plotting_solve_result(v_h)
-"""
