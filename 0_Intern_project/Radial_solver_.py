@@ -23,37 +23,14 @@ plt.close('all')
 
 """-------------------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------------
-                    Plot solution and mesh
+                    Plot function
 ----------------------------------------------------------------------------------------------
 -------------------------------------------------------------------------------------------"""
 
-def plotting_solve_result_normal(u,title):
-    r = (mesh.coordinates())
-    x = np.sqrt(r)
-    y = [v*sqrt(u(v)) for v in r]
-    
-    #x = r
-    #y = [u(v) for v in r]
-    
-    plt.figure()
-    plt.title(title)
-    plt.xlabel("Radial coordinate")
-    plt.ylabel(title)
-    plt.grid()
-    #plt.plot(x,y)
-    plot(u)
-    # show the plots
-    plt.show()
-    return 
-
-
-def plotting_solve_result(u,title):
-    r = (mesh.coordinates())
-    x = np.sqrt(r)
-    y = [v*sqrt(u(v)) for v in r]
-    
-    #x = r
-    #y = [u(v) for v in r]
+def plotting_normal(u,title):
+    rplot = (mesh.coordinates())
+    x = rplot
+    y = [u(v) for v in rplot]
     
     plt.figure()
     plt.title(title)
@@ -61,8 +38,20 @@ def plotting_solve_result(u,title):
     plt.ylabel(title)
     plt.grid()
     plt.plot(x,y)
-    #plot(u)
-    # show the plots
+    plt.show()
+    return 
+
+
+def plotting_sqrt(u,title):
+    rplot = (mesh.coordinates())
+    x = np.sqrt(rplot)
+    y = [v*sqrt(u(v)) for v in rplot] 
+    plt.figure()
+    plt.title(title)
+    plt.xlabel("Radial coordinate")
+    plt.ylabel(title)
+    plt.grid()
+    plt.plot(x,y)
     plt.show()
     return 
 '''------------------------------------'''
@@ -185,7 +174,7 @@ end_x = 6
 amount_vertices = 200
 mesh = IntervalMesh(amount_vertices,start_x, end_x) # Splits up the interval [0,1] in (n) elements 
 
-print("MES COORDS",np.shape(mesh.coordinates()))
+#print("MES COORDS",np.shape(mesh.coordinates()))
 
 #Creation of Function Space
 P1 = FiniteElement("P", mesh.ufl_cell(), 2)
@@ -335,7 +324,7 @@ while eps > minimal_error and iters < maxiter:
         + D_*u_nk**(5/6)*qr*dx      \
         - Ex*U_*qr*dx              \
         - v_hk*U_*qr*dx            \
-        - mu*U_*qr*dx
+        + mu*U_*qr*dx
     
     #Poisson equation of Hatree potential
     F = F -(                          \
@@ -361,8 +350,8 @@ while eps > minimal_error and iters < maxiter:
     minval = nvec.min()
     print("u_nk minimum:",minval)    
     
-    #plotting_solve_result(v_hk,"v_nk pre solver")
-    plotting_solve_result_normal(u_nk,"u_nk pre solver")
+    #plotting_normal(v_hk,"v_nk pre solver")
+    plotting_normal(u_nk,"u_nk pre solver")
     
     solve(A, du.vector(), b)
 
@@ -375,8 +364,8 @@ while eps > minimal_error and iters < maxiter:
     assign(du_n, du.sub(1))     #step to transfer values to du_n
     u_n = None                  #empty u_n
 
-    #plotting_solve_result(dv_h,"dv_h")
-    plotting_solve_result(du_n,"du_n") 
+    #plotting_sqrt(dv_h,"dv_h")
+    plotting_sqrt(du_n,"du_n") 
     
     #---- Calculate the Error -----------------------
     avg = sum(du.vector().get_local())/len(du.vector().get_local())
@@ -399,7 +388,7 @@ while eps > minimal_error and iters < maxiter:
     assign(u_n, u_k.sub(1))
     du_n = None  
 
-    plotting_solve_result(u_n,"density")
+    plotting_sqrt(u_n,"density")
     
     #---- Ad hoc negative density fix -------
     #print('check for negative u_n before', u_n.vector().get_local())
@@ -431,8 +420,8 @@ while eps > minimal_error and iters < maxiter:
     #L = (-1.0/(4.0*pi))*(2/r*v_h.dx(0)*v-v_h.dx(0)*v.dx(0))*dx
     #solve(a == L, u_n ,bcs)
     
-    #plotting_solve_result(u_n)
-    #plotting_solve_result(v_h)
+    #plotting_sqrt(u_n)
+    #plotting_sqrt(v_h)
     
 
 """
