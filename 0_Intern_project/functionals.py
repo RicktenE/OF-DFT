@@ -8,7 +8,7 @@ Created on Wed Apr 22 09:53:14 2020
 This code describes the functionals
 """
 class TF(object):
-    
+    import math
     CF=(3.0/10.0)*(3.0*math.pi**2)**(2.0/3.0)
     
     def energy_density_expr(self,densobj):
@@ -35,7 +35,7 @@ class TF(object):
 func_tf = TF()
 
 class Dirac(object):
-    
+    import math
     CX = 3.0/4.0*(3.0/math.pi)**(1.0/3.0)
     CF = (3.0/10.0)*(3.0*math.pi**2)**(2.0/3.0)
     
@@ -63,7 +63,7 @@ class Dirac(object):
 func_dirac = Dirac()
 
 class Weizsacker(object):
-    
+    import math
     CX = 3.0/4.0*(3.0/math.pi)**(1.0/3.0)
     CF=(3.0/10.0)*(3.0*math.pi**2)**(2.0/3.0)
     
