@@ -415,6 +415,7 @@ while eps > minimal_error and iters < maxiter:
         intn = float(assemble((u_n)*dx(mesh)))            
         assign(u_k.sub(1),u_n)
         print("Number of electrons after correction:",intn)
+<<<<<<< HEAD:pydefuse copy/test.py
         
 
     nvec = u_k.sub(1).vector()
@@ -422,3 +423,50 @@ while eps > minimal_error and iters < maxiter:
     print("Minval after correction:",minval)
     
     print('Check end of loop, iteration: ', iters,' Error: ', eps)
+=======
+
+    nvec = u_k.sub(1).vector()
+    minval = nvec.min()
+    print("Minval after correction:",minval)
+    
+    print('Check end of loop, iteration: ', iters,' Error: ', eps)
+    
+    
+    #---- vh -> u_n
+    #u = TrialFunction(V)
+    #v = TestFunction(V)        
+    #a = u*v*dx
+    # Works but with oscillations
+    #L = (-1.0/(4.0*pi))*(2/r*v_h.dx(0)*v-v_h.dx(0)*v.dx(0))*dx
+    #solve(a == L, u_n ,bcs)
+    
+    #plotting_solve_result(u_n)
+    #plotting_solve_result(v_h)
+    
+
+"""
+#------------------------- calculate v_h
+calc_vh = Function(V)
+rhs = Function(V)
+rhs.assign(u_n)
+calc_vh.vector()[:]=0
+    
+u = TrialFunction(V)
+v = TestFunction(V)
+a = u*v*dx
+L = rhs*v*dx
+
+A,b = assemble_system(a, L, bcs)
+
+solve(A, calc_vh.vector(), b)
+v_h = calc_vh
+#---------------------------------solve for u_n from v_h
+a = u*v*dx
+L = (1.0/(4.0*pi))*inner(grad(v_h),grad(v))*dx
+solve(a == L, u_n,bcs)
+
+#u_n = r*sqrt(u_n)
+plotting_solve_result(u_n)
+plotting_solve_result(v_h)
+"""
+>>>>>>> 56f5e8300d9b936ca85536e8dbede276076a64ab:0_Intern_project/Radial_atom_solver_TFDW_rewritten.py
