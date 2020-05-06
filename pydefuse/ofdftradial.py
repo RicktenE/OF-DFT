@@ -18,13 +18,14 @@
 
 import math
 import numpy, pylab
-from pydefuse.chronicle import chronicle
+import chronicle
 from dolfin import *
 
-from pydefuse import feradial, func_tf
+import feradial
+from functional import tf
 from densityobj import DensityFields, DensityRadialWeakForm
 import gui
-from pydefuse.feradial import solve_radial_poisson
+
 
 class OfdftRadial(object):
 
