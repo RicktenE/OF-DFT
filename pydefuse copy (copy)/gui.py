@@ -106,5 +106,5 @@ def plot_radial(rs, fields,title="", data = None, xs=None):
     
     
 def pause():
-    print "**** click on figure to continue *****"
+    print( "**** click on figure to continue *****")
     pylab.waitforbuttonpress()

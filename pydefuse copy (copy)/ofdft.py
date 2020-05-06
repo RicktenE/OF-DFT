@@ -116,19 +116,19 @@ class Ofdft(object):
         self.cartcoords = self.fel.reduced_to_cartesian(self.coords)
         self.deltastrengths = [-x for x in self.atoms]
         
-	convfact = self.convfact_length 
-        print "====================================================="
-        print " SYSTEM:"
-        print "====================================================="
-        print "Unitcell ("+self.convfact_length_name+"):"
-        print self.unitcell*convfact
-        print "Periodic boundary conditions:",self.pbc
-        print "Atoms:", self.atoms
-        print "Coords ("+self.convfact_length_name+"):"
-        print self.coords*convfact
-        print "Cell volume ("+self.convfact_length_name+"^3):",self.fel.vol*convfact**3
-        print "Number of electrons in system:",self.N
-        print "====================================================="
+        convfact = self.convfact_length
+        print ("=====================================================")
+        print (" SYSTEM:")
+        print ("=====================================================")
+        print ("Unitcell ("+self.convfact_length_name+"):")
+        print (self.unitcell*convfact)
+        print ("Periodic boundary conditions:",self.pbc)
+        print ("Atoms:", self.atoms)
+        print ("Coords ("+self.convfact_length_name+"):")
+        print (self.coords*convfact)
+        print ("Cell volume ("+self.convfact_length_name+"^3):",self.fel.vol*convfact**3)
+        print ("Number of electrons in system:",self.N)
+        print ("=====================================================")
 
         if self.params.gui:
             import gui
@@ -716,16 +716,16 @@ class Ofdft(object):
 
     def print_energies(self):
         convfact = self.convfact_energy            
-        print "==== Resulting energies ("+self.convfact_energy_name+"): ================"
-        print "Ion-ion:        % 10.4f"%(self.e_ionion*convfact,)
-        print "Ion-elec:       % 10.4f"%(self.e_ionelec*convfact,)
-        print "Elec-elec (Eh): % 10.4f"%(self.e_elecelec*convfact,)
-        print "Functional:     % 10.4f"%(self.e_functional*convfact,)
-        print "=============================================="
-        print "Total energy:   % 10.4f"%(self.e_tot*convfact,)
-        print "Total w/o i-i:  % 10.4f"%((self.e_ionelec+self.e_elecelec+self.e_functional)*convfact,)
-        print "=============================================="
-        print
+        print ("==== Resulting energies ("+self.convfact_energy_name+"): ================")
+        print ("Ion-ion:        % 10.4f"%(self.e_ionion*convfact,))
+        print ("Ion-elec:       % 10.4f"%(self.e_ionelec*convfact,))
+        print ("Elec-elec (Eh): % 10.4f"%(self.e_elecelec*convfact,))
+        print ("Functional:     % 10.4f"%(self.e_functional*convfact,))
+        print ("==============================================")
+        print ("Total energy:   % 10.4f"%(self.e_tot*convfact,))
+        print ("Total w/o i-i:  % 10.4f"%((self.e_ionelec+self.e_elecelec+self.e_functional)*convfact,))
+        print ("==============================================")
+        print()
         
     def exit(self):
         if self.params.gui:

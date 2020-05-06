@@ -301,7 +301,7 @@ def jigzaw_icosahedron_mesher(unitcell, centers, radii, uc_divs=6, sphere_divs=1
         #print verts[i], outverts[i]
         if numpy.linalg.norm(numpy.array(verts[i]) - numpy.array(outverts[i])) > 1e-6:
             #> DOLFIN_EPS:
-            print "ERR",verts[i],outverts[i]
+            print ("ERR",verts[i],outverts[i])
             raise Exception("Tetrahedralization did not give the same points back")
     
     verts = outverts

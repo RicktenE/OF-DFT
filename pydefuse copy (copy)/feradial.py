@@ -329,7 +329,7 @@ def solve_radial_tf_method2(fel, sol, Z, screening_function=None):
         A, b = assemble_system(J, -F, bcs_du)
         solve(A, du.vector(), b)
         eps = numpy.linalg.norm(du.vector().array(), ord=numpy.Inf)
-        print 'Norm:', eps
+        print ('Norm:', eps)
         u.vector()[:] = u_k.vector() + omega*du.vector()
         u_k.assign(u)
      
@@ -381,14 +381,14 @@ def solve_radial_poisson_old(fel, sol, rhs, Z = 0, boundaryexpr=None):
 
     A,b = assemble_system(a, L, bcs)
     if Z != 0:
-        print "APPLYING DELTA",Z
+        print ("APPLYING DELTA",Z)
         # TODO: Should we have delta^3? How do we do that?...
         delta = PointSource(V, Point(0.0),4.0*pi*Z)
         delta.apply(b)
     
-    print "= Solving radial poisson equation"
+    print("= Solving radial poisson equation")
     solve(A, sol.vector(), b)
-    print "= Finished"
+    print ("= Finished")
     #plot(sol,interactive=True)
      
     #drawgrid = numpy.r_[0:10:0.1]
@@ -438,14 +438,14 @@ def solve_radial_poisson(fel, sol, rhs, Z = 0, boundaryexpr=None):
 
     A,b = assemble_system(a, L, bcs)
     if Z != 0:
-        print "APPLYING DELTA",Z
+        print ("APPLYING DELTA",Z)
         # TODO: Should we have delta^3? How do we do that?...
         delta = PointSource(V, Point(fel.rs[0]),4.0*pi*Z)
         delta.apply(b)
     
-    print "= Solving radial poisson equation"
+    print ("= Solving radial poisson equation")
     solve(A, sol.vector(), b)
-    print "= Finished"
+    print ("= Finished")
     #plot(sol,interactive=True)
      
     #drawgrid = numpy.r_[0:10:0.1]
@@ -490,9 +490,9 @@ def solve_radial_helmholtz(fel, sol, rhs, k2, Z=0,boundaryexpr=None):
         delta = PointSource(V, Point(0),4.0*pi*Z)
         delta.apply(b)
     
-    print "= Solving helmholtz equation"
+    print ("= Solving helmholtz equation")
     solve(A, sol.vector(), b)
-    print "= Finished"
+    print ("= Finished")
     
     #offset = float(assemble(sol*dx(mesh)))/vol
     #sol.vector()[:] = sol.vector() - offset

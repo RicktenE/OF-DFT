@@ -22,14 +22,49 @@ from matplotlib import pyplot as plt
 
 plt.close('all')
 
+"""---------------------------------------------------------------------------"""
+#Element H
+Z = 1   # Hydrogen
+N = Z 		  # Neutral
+
+#Element Ne
+#Z = Constant(10) # Neon
+#N = Z 		  # Neutral
+
+#Element Kr
+#Z = Constant(36) # Krypton
+#N = Z 		  # Neutral 
+
+a_0 = 1 # Hatree units
+Alpha = (4/a_0)*(2*Z/(9*pi**2)**(1/3))
+
+
+###-------Functional Constants
+CF=(3.0/10.0)*(3.0*math.pi**2)**(2.0/3.0)
+CX = 3.0/4.0*(3.0/math.pi)**(1.0/3.0)
+
 """-------------------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------------
                     Plot function
 ----------------------------------------------------------------------------------------------
 -------------------------------------------------------------------------------------------"""
 
+def plotting_psi(u,title):
+    rplot = mesh.coordinates()
+    x = rplot*Alpha
+    y = [u(v)**(2/3)*v*(3*math.pi**2/(2*np.sqrt(2)))**(2/3)  for v in rplot]
+    
+    plt.figure()
+    plt.title(title)
+    plt.xlabel("Alpha * R")
+    plt.ylabel("Psi")
+    plt.grid()
+    plt.plot(x,y)
+    plt.show()
+    return     
+
 def plotting_normal(u,title):
-    rplot = (mesh.coordinates())
+    rplot = mesh.coordinates()
     x = rplot
     y = [u(v) for v in rplot]
     
@@ -44,13 +79,14 @@ def plotting_normal(u,title):
 
 
 def plotting_sqrt(u,title):
-    rplot = (mesh.coordinates())
+    rplot = mesh.coordinates()
     x = np.sqrt(rplot)
     y = [v*sqrt(u(v)) for v in rplot] 
+    
     plt.figure()
     plt.title(title)
-    plt.xlabel("Radial coordinate")
-    plt.ylabel(title)
+    plt.xlabel("SQRT(R)")
+    plt.ylabel(" R * SQRT(density)")
     plt.grid()
     plt.plot(x,y)
     plt.show()
@@ -61,8 +97,10 @@ def plotting_sqrt(u,title):
                     Creating the mesh + Function Spaces + defining type of element
 ----------------------------------------------------------------------------------------------
 -------------------------------------------------------------------------------------------""" 
+
+
 # Create mesh and define function space
-start_x = 0.3
+start_x = 0.1
 end_x = 20
 amount_vertices = 200
 mesh = IntervalMesh(amount_vertices,start_x, end_x) # Splits up the interval [0,1] in (n) elements 
@@ -78,23 +116,6 @@ W = FunctionSpace(mesh, element)
 
 #Define radial coordinates based on mesh
 r = SpatialCoordinate(mesh)[0] # r are the x coordinates. 
-
-#Element H
-Z = Constant(1) # Hydrogen
-N = Z # Neutral
-
-#Element Ne
-#Z = Constant(10) # Neon
-#N = Z # Neutral
-
-#Element Kr
-#Z = Constant(36) # Krypton
-#N = Z # Neutral 
-"""---------------------------------------------------------------------------"""
-## ------ Tweaking values -------
-neg_correction = 0.3
-omega = 1
-mu = 0
 
 """-------------------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------------------- 
@@ -114,7 +135,7 @@ def boundary_R(x, on_boundary):
     return on_boundary and near(x[0], end_x, tol)
 
 #Defining expression on left boundary
-n_L = Expression('0', degree=1)         
+n_L = Expression('1', degree=1)         
 bc_L = DirichletBC(V, n_L, boundary_L)  
     
 #Defining expression on right boundary
@@ -129,17 +150,26 @@ bcs = [bc_L, bc_R]
 ----------------------------------------------------------------------------------------------
 -------------------------------------------------------------------------------------------"""
 # External potential
-
 Ex = -Z/r
 
 #------ Initial density ------
+n_i = Expression('a*exp(-b*pow(x[0], 2))', degree = 2, a = 1, b=0.5)
+#n_i = Constant(1)
 
-#n_i = Expression('a*exp(-b*pow(x[0], 2))', degree = 2, a = 1, b=1.0)
-#n_i = Expression('pow(x[0],2)', degree = 2)
-n_i = Constant(1)
+u_n = interpolate(n_i, V)
 
-u_n = interpolate(n_i,V)
+#plotting_normal(u_n,"Initial density--pre correction")
+"""
+u = TrialFunction(V)
+v = TestFunction(V)
+a = -u.dx(0)*v.dx(0)*dx 
+L = sqrt(n_i)**3*v*dx
+A,  b = assemble_system(a, L, bcs)
+u_k = Function(V)
+solve(A, u_n.vector(), b)
 
+plotting_normal(u_n,"Initial density-- Post initial solve --Pre correction")
+"""
 #------------Checking amount of electrons ----------------------
 
 intn = float(assemble((u_n)*dx(mesh)))
@@ -147,7 +177,8 @@ print("[Initial density] Number of electrons before adjustment:"+str(intn))
 u_n.vector()[:] = u_n.vector()[:]*N/intn  
 intn = float(assemble((u_n)*dx(mesh)))
 print("[Initial density] Number of electrons at start after adjustment:",intn)
-
+plotting_normal(u_n,"Initial density--Post correction -- Begin loop")
+print(type(u_n))
 """-------------------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------------
                     Defining and solving the variational problem
@@ -168,51 +199,60 @@ assign(u_k.sub(1), u_n)
 
 nlast = Function(V)
 
-bcs_du = []
+#redefine boundary conditions for loop iteration
+bc_L_du = DirichletBC(V, Constant(0), boundary_L)
+bc_R_du = DirichletBC(V, Constant(0), boundary_R)
+bcs_du = [bc_L_du, bc_R_du]
 
-
-###-------try getting the functionals to work properly
-CF=(3.0/10.0)*(3.0*math.pi**2)**(2.0/3.0)
-CX = 3.0/4.0*(3.0/math.pi)**(1.0/3.0)
-
-
+"""---------------------------------------------------------------------------"""
+## ------ Tweaking values -------
+neg_correction = 0.1
+omega = 1
+mu = 100
 
 eps = 1
 iters = 0
-maxiter = 1500
-minimal_error = 1E-9
+maxiter = 1000
+minimal_error = 1E-10
 
 while eps > minimal_error and iters < maxiter:
     iters += 1 
     
     # Put the initial [density and v_h] in u_k
     (v_hk, u_nk) = split(u_k)
-    #plotting_normal(u_nk, "density beginning loop") #for verifying with previous results
-    plotting_sqrt(u_nk, "density beginning loop")   #For verifying with 'accurate solution...' paper
+    
+    plotting_psi(nlast, "Psi begin of loop ")
+    #plotting_sqrt(u_nk, "density pre solver")   #For verifying with 'accurate solution...' paper
     
     #---- Setting up functionals -------------------
-    
     TF = (5.0/3.0)*CF*u_nk**(2.0/3.0)*pr
     DIRAC = (-4.0/3.0)*CX*pow(u_nk,(1.0/3.0))*pr
-    WEIZSACKER = ((1.0/8.0*(dot(u_nk.dx(0),u_nk.dx(0))/(u_nk*u_nk))*pr+(1.0/4.0*(dot(u_nk.dx(0),pr.dx(0)))/u_nk)))    
-    funcpots = TF + DIRAC + WEIZSACKER       
+    WEIZSACKER = (1.0/8.0*(dot(grad(u_nk),grad(u_nk))/		 (u_nk**2)*pr+(1.0/4.0*(dot(grad(u_nk),grad(pr)))/u_nk)))
+    funcpots = 0
+    funcpots = TF \
+		#+ WEIZSACKER \
+        #+ DIRAC 
+      
     
     #---- Solving v_h and u_n ----------------------
     # rotational transformation of nabla^2 v_h = -4 pi n(r)
-    F = - v_hk.dx(0)*qr.dx(0)*dx    \
-        + (2/r)*v_hk.dx(0)*qr*dx  \
-        + 4*math.pi*u_nk*qr*dx              
+    F = - v_hk.dx(0)*qr.dx(0)*r/2*dx    \
+    + v_hk.dx(0)*qr*dx  \
+    + 4*math.pi*u_nk*qr*r/2*dx              
          
     # Second coupled equation: Ts[n] + Exc[n] + Vext(r) - mu = 0
-    F = F + Ex*pr*dx + funcpots*dx + v_hk*pr*dx - Constant(mu)*pr*dx
-
+    F = F + funcpots*dx \
+    + v_hk*pr*dx \
+    + Ex*pr*dx +\
+    - Constant(mu)*pr*dx
 
     #Calculate Jacobian
     J = derivative(F, u_k, du_trial)
     
     #Assemble system
-    A, b = assemble_system(J, -F, bcs)
+    A, b = assemble_system(J, -F, bcs_du)
     
+    """
     rvec = mesh.coordinates()
     nvec = np.array([v_hk(v) for v in rvec])
     minval = nvec.min()
@@ -222,7 +262,7 @@ while eps > minimal_error and iters < maxiter:
     nvec = np.array([u_nk(v) for v in rvec])
     minval = nvec.min()
     print("u_nk minimum:",minval) 
-      
+    """
     solve(A, du.vector(), b)
     
     # Conserve memory by reusing vectors for v_h and u_n to keep dv_h and du_n
@@ -234,19 +274,27 @@ while eps > minimal_error and iters < maxiter:
     assign(du_n, du.sub(1))     #step to transfer values to du_n
     u_n = None                  #empty u_n
 
-    #plotting_normal(du_n, "du_n (Step we want density to take)") #for verifying with previous results
-    plotting_sqrt(du_n,"du_n (step we want the density to take)") #For verifying with 'accurate solution...' paper
-
+    plotting_normal(du_n, "du_n (Step for density)") #for verifying with TF results
+    #plotting_sqrt(du_n,"du_n (step for the density to take)") #For verifying with TFDW
+    plotting_psi(du_n,"du_n (step for psi to take)") #For verifying with TFDW
     
     #---- Calculate the Error -----------------------
-    avg = sum(du.vector())/len(du.vector())
-    eps = np.linalg.norm(du.vector()-avg, ord=np.Inf)
+    avg = sum(du_n.vector())/len(du_n.vector())
+    eps = np.linalg.norm(du_n.vector()-avg, ord=np.Inf)
     if math.isnan(eps):
             raise Exception("Residual error is NaN")
     print("EPS is:",eps)
         
     #--- Assigning the last calculated density to nlast
     assign(nlast,u_k.sub(1))
+    
+    #--- Rewriting to Psi
+    #psi = (nlast*r**(3/2)/(2*sqrt(2)/3*math.pi**2*(Z/a_0)**(3/2)))**(2/3)
+    #plotting_psi(psi, "Psi vs alpha*radial")
+
+    #psi2 = nlast**(2/3)*r*(3*math.pi**2/(2*sqrt(2)))**(2/3)*a_0/Z 
+    #plotting_psi(psi2, " PSI vs Aplha*Radial - 2nd Version")
+    
     
     #---- Taking the step for u_n and v_h ------------
     u_k.vector()[:] = u_k.vector()[:] + omega*du.vector()[:]
@@ -261,10 +309,7 @@ while eps > minimal_error and iters < maxiter:
     assign(u_n, u_k.sub(1))
     du_n = None  
 
-    #plotting_normal(u_n,"density post solver / pre neg fix")
-    
-    
-    #---- Ad hoc negative density fix -------
+     #---- Ad hoc negative density fix -------
     minval = u_n.vector().min()
     print("Going to add:", minval+neg_correction)
     if minval <= 0.0:
@@ -272,15 +317,16 @@ while eps > minimal_error and iters < maxiter:
         intn = float(assemble((u_n)*dx(mesh)))
         print("Number of electrons before correction:",intn)
         
+        assign(u_k.sub(1),u_n)
         u_n.vector()[:] = u_n.vector()[:]*N/intn    
         intn = float(assemble((u_n)*dx(mesh)))            
         print("Number of electrons after correction:",intn)
 
-    assign(u_k.sub(1),u_n)
     minval = u_k.sub(1).vector().min()
     
-    print("Minval after correction:",minval)
-    print('Check end of loop, iteration: ', iters,' Error: ', eps)
-    
-    #plotting_normal(u_k.sub(1), "Density post neg fix" )
-    
+    #print("Minval after correction:",minval)
+    print('Check end of loop, iteration: ', iters)
+
+plotting_normal(nlast, "Final Density normal plot ")
+plotting_sqrt(nlast, "Final Density SQRT plot")
+plotting_psi(nlast, "Final Psi ")
