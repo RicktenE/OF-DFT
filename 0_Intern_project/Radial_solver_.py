@@ -159,7 +159,7 @@ n_i = Expression('a*exp(-b*pow(x[0], 2))', degree = 2, a = 1, b=0.5)
 u_n = interpolate(n_i, V)
 
 #plotting_normal(u_n,"Initial density--pre correction")
-"""
+
 u = TrialFunction(V)
 v = TestFunction(V)
 a = -u.dx(0)*v.dx(0)*dx 
@@ -169,7 +169,7 @@ u_k = Function(V)
 solve(A, u_n.vector(), b)
 
 plotting_normal(u_n,"Initial density-- Post initial solve --Pre correction")
-"""
+
 #------------Checking amount of electrons ----------------------
 
 intn = float(assemble((u_n)*dx(mesh)))

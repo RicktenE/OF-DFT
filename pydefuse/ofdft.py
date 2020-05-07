@@ -19,14 +19,14 @@
 import math
 import numpy
 import pylab
-from pydefuse.chronicle import chronicle 
+import chronicle 
 from dolfin import *
 from densityobj import DensityFields, DensityWeakForm
-from functional import func_tf
-#from mshr import *
+from functional import func_tf, func_weizsacker
+from mshr import *
 
-from pydefuse import fe
-from pydefuse.functional.weizsacker import func_weizsacker
+import fe
+
 
 class Ofdft(object):
 

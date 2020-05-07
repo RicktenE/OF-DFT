@@ -19,7 +19,7 @@
 from ofdft import Ofdft
 from functional import *
 from ofdftradial import OfdftRadial
-from pydefuse.chronicle import chronicle
+import chronicle
 
 
 
