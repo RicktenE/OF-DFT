@@ -102,7 +102,7 @@ class OfdftRadial(object):
         #lmbd = 1.0/9.0
         ##weisackerenergy = lamba*(1.0/8.0*gradn2/n)
         #weisackerpot = lmbd*(1.0/8.0*gradn2/(n**2+1.0) - 1.0/4.0*lapln/(abs(n)+1.0))
-     
+    
     def initialize(self):
         chronicle.start("Initialize system")
         self.felr = feradial.FeRadialLattice(self.rs, self.params)
@@ -253,10 +253,10 @@ class OfdftRadial(object):
 
             chronicle.start("Calculate functionals")
             funcpots = 0
-            #densobj = DensityFields(n,gr2,la)
+            densobj = DensityFields(n,gr2,la)
             ## TODO, if tf already in potentials, skip that term instead
-            #for f in self.functionals:
-            #    funcpots += f.potential_enhancement_expr(densobj)
+            for f in self.functionals:
+                funcpots += f.potential_enhancement_expr(densobj)
             #chronicle.stop()
 
             # The adjustment of mu isn't very fundamental, there will be a component of mu hidden as an offset in v_h,
@@ -327,34 +327,93 @@ class OfdftRadial(object):
             #r = SpatialCoordinate(self.felr.msh)[0]
             #gr = project(u_k.dx(0),V)
             #n2 = project(-1.0/(4.0*pi)*(gr.dx(0)+2/r*gr),V)
-            chronicle.stop()    
+            chronicle.stop()
 
+
+# =============================================================================
+#             #----------- plotting normal -------#
 #             pylab.clf()
-#             drawgrid = numpy.logspace(-5,2,100)
-#             #drawgrid -= drawgrid[0]
-#             yvals = [gr2(r) for r in drawgrid]
-#             yvals2 = [la(r) for r in drawgrid]
-#             #yvals2 = [self.n(r) for r in drawgrid]
-#             #pylab.semilogx(drawgrid,yvals,'bx-')
-#             pylab.semilogx(drawgrid,yvals2,'ro-')
-#             #pylab.loglog(drawgrid,yvals2,'k.-')
-#             pylab.title("grad lapl")
-#             pylab.pause(0.0001)
- 
+#             rplot = self.rs
+#             x = rplot
+#             y = [n(v) for v in rplot]
+#         
+#             pylab.plot(x,y,'bx-')
+#             pylab.title("Density")
+#             pylab.pause(0.001)
+#             pylab.xlabel("r")
+#             pylab.ylabel("n[r]")
+# =============================================================================
+
+            
+
+            #----- plotting SQRT ----- #
             pylab.clf()
-            drawgrid = self.rs
-            #drawgrid = numpy.logspace(-5,2,100)
-            yvals = [n(rr) for rr in drawgrid]
-            pylab.plot(drawgrid,yvals,'bx-')
-            pylab.title("density")
+            rplot = self.rs
+            x = numpy.sqrt(rplot)
+            y = [v*numpy.sqrt(n(v)) for v in rplot] 
+           
+            pylab.plot(x,y,'bx-')
+            pylab.title("Density")
             pylab.pause(0.0001)
- 
+            pylab.xlabel("SQRT(R)")
+            pylab.ylabel("R * SQRT(density")
+
+# =============================================================================
+#             #------ plotting PSI ----#
+#             a_0 = 1 # Hatree units
+#             Alpha_ = (4/a_0)*(2*self.Z/(9*math.pi**2)**(1/3))
+#             
 #             pylab.clf()
-#             drawgrid = numpy.logspace(-5,2,100)
-#             yvals = [u_k(r) for r in drawgrid]
-#             pylab.semilogx(drawgrid,yvals,'bx-')
+#             rplot = self.rs
+#             x = rplot*Alpha_
+#             y = [n(v)**(2/3)*v*(3*math.pi**2/(2*numpy.sqrt(2)))**(2/3)  for v in rplot]
+#             #x = numpy.logspace(-5,2,100)
+#         
+#             pylab.plot(x,y,'bx-')
+#             pylab.title("Density")
+#             pylab.pause(0.0001)
+#             pylab.xlabel("Alpha * R")
+#             pylab.ylabel("Psi")
+# =============================================================================
+
+# =============================================================================
+#             #plotting_normal(n, "density")
+#             #plotting_sqrt(n,"density")
+#             #plotting_psi(n, "density as psi")
+# =============================================================================
+
+# =============================================================================
+#              pylab.clf()
+#              drawgrid = numpy.logspace(-5,2,100)
+#              #drawgrid -= drawgrid[0]
+#              yvals = [gr2(r) for r in drawgrid]
+#              yvals2 = [la(r) for r in drawgrid]
+#              #yvals2 = [self.n(r) for r in drawgrid]
+#              #pylab.semilogx(drawgrid,yvals,'bx-')
+#              pylab.semilogx(drawgrid,yvals2,'ro-')
+#              #pylab.loglog(drawgrid,yvals2,'k.-')
+#              pylab.title("grad lapl")
+#              pylab.pause(0.0001)
+# =============================================================================
+ 
+# =============================================================================
+#             pylab.clf()
+#             drawgrid = self.rs
+#             #drawgrid = numpy.logspace(-5,2,100)
+#             yvals = [n(rr) for rr in drawgrid]
+#             pylab.plot(drawgrid,yvals,'bx-')
 #             pylab.title("density")
 #             pylab.pause(0.0001)
+# =============================================================================
+ 
+# =============================================================================
+#              pylab.clf()
+#              drawgrid = numpy.logspace(-5,2,100)
+#              yvals = [u_k(r) for r in drawgrid]
+#              pylab.semilogx(drawgrid,yvals,'bx-')
+#              pylab.title("density")
+#              pylab.pause(0.0001)
+# =============================================================================
            
         self.n = n
 
@@ -1400,17 +1459,30 @@ class OfdftRadial(object):
     
         chronicle.stop()
         
-        
         chronicle.start("Calculate functional energy")
         
         #self.functional_energy_density(field)
         #self.e_functional = self.felr.integrate_scalar_field(field)
     
         self.e_functional = self.felr.integrate_scalar_field(self.functional_energy_density_expr())
-    
+        print('check type e_functional', type(self.e_functional))
         chronicle.stop()
 
         self.e_tot = self.e_ionion + self.e_ionelec + self.e_elecelec + self.e_functional
 
+    def print_energies(self):
+#        convfact = self.convfact_energy            
+        print ("==== Resulting energies (hartree to ev): ================")
+        print ("Ion-ion:        % 10.4f"%(self.e_ionion*27.21138386))
+        print ("Ion-elec:       % 10.4f"%(self.e_ionelec*27.21138386))
+        print ("Elec-elec (Eh): % 10.4f"%(self.e_elecelec*27.21138386))
+        print ("Functional:     % 10.4f"%(self.e_functional*27.21138386))
+        print ("==============================================")
+        print ("Total energy:   % 10.4f"%(self.e_tot*27.21138386))
+        print ("Total w/o i-i:  % 10.4f"%((self.e_ionelec+self.e_elecelec+self.e_functional)*27.21138386))
+        print ("==============================================")
+        print()
     
+        
+        
         

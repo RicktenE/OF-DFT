@@ -18,6 +18,7 @@ import numpy as np
 from dolfin import *
 import matplotlib as mpl
 from matplotlib import pyplot as plt
+import pylab
 
 
 plt.close('all')
@@ -50,46 +51,55 @@ CX = 3.0/4.0*(3.0/math.pi)**(1.0/3.0)
 -------------------------------------------------------------------------------------------"""
 
 def plotting_psi(u,title):
+    a_0 = 1 # Hatree units
+    Alpha_ = (4/a_0)*(2*Z/(9*pi**2)**(1/3))
+    
+    pylab.clf()
     rplot = mesh.coordinates()
-    x = rplot*Alpha
+    x = rplot*Alpha_
     y = [u(v)**(2/3)*v*(3*math.pi**2/(2*np.sqrt(2)))**(2/3)  for v in rplot]
     
-    plt.figure()
-    plt.title(title)
-    plt.xlabel("Alpha * R")
-    plt.ylabel("Psi")
-    plt.grid()
-    plt.plot(x,y)
-    plt.show()
+    #x = numpy.logspace(-5,2,100)
+    y = [u(v)**(2/3)*v*(3*math.pi**2/(2*np.sqrt(2)))**(2/3)  for v in rplot]
+    pylab.plot(x,y,'bx-')
+    pylab.title(title)
+    pylab.pause(0.001)
+    pylab.xlabel("Alpha * R")
+    pylab.ylabel("Psi")
+
     return     
 
 def plotting_normal(u,title):
+    pylab.clf()
+    
     rplot = mesh.coordinates()
     x = rplot
+    #x = numpy.logspace(-5,2,100)
     y = [u(v) for v in rplot]
-    
-    plt.figure()
-    plt.title(title)
-    plt.xlabel("Radial coordinate")
-    plt.ylabel(title)
-    plt.grid()
-    plt.plot(x,y)
-    plt.show()
+
+    pylab.plot(x,y,'bx-')
+    pylab.title(title)
+    pylab.pause(1)
+    pylab.grid
+    pylab.xlabel("r")
+    pylab.ylabel("n[r]")
+
     return 
 
 
 def plotting_sqrt(u,title):
+    pylab.clf()
     rplot = mesh.coordinates()
     x = np.sqrt(rplot)
+    #x = numpy.logspace(-5,2,100)
     y = [v*sqrt(u(v)) for v in rplot] 
     
-    plt.figure()
-    plt.title(title)
-    plt.xlabel("SQRT(R)")
-    plt.ylabel(" R * SQRT(density)")
-    plt.grid()
-    plt.plot(x,y)
-    plt.show()
+    pylab.plot(x,y,'bx-')
+    pylab.title(title)
+    pylab.pause(0.001)
+    pylab.xlabel("SQRT(R)")
+    pylab.ylabel("R * SQRT(density")
+    
     return 
      
 """-------------------------------------------------------------------------------------------
@@ -221,9 +231,9 @@ while eps > minimal_error and iters < maxiter:
     # Put the initial [density and v_h] in u_k
     (v_hk, u_nk) = split(u_k)
     
-    plotting_psi(nlast, "Psi begin of loop ")
+    #plotting_psi(nlast, "Psi begin of loop ")
     #plotting_sqrt(u_nk, "density pre solver")   #For verifying with 'accurate solution...' paper
-    
+    plotting_normal(u_nk,"density pre solver")
     #---- Setting up functionals -------------------
     TF = (5.0/3.0)*CF*u_nk**(2.0/3.0)*pr
     DIRAC = (-4.0/3.0)*CX*pow(u_nk,(1.0/3.0))*pr
@@ -274,9 +284,9 @@ while eps > minimal_error and iters < maxiter:
     assign(du_n, du.sub(1))     #step to transfer values to du_n
     u_n = None                  #empty u_n
 
-    plotting_normal(du_n, "du_n (Step for density)") #for verifying with TF results
+    #plotting_normal(du_n, "du_n (Step for density)") #for verifying with TF results
     #plotting_sqrt(du_n,"du_n (step for the density to take)") #For verifying with TFDW
-    plotting_psi(du_n,"du_n (step for psi to take)") #For verifying with TFDW
+    #plotting_psi(du_n,"du_n (step for psi to take)") #For verifying with TFDW
     
     #---- Calculate the Error -----------------------
     avg = sum(du_n.vector())/len(du_n.vector())
@@ -288,13 +298,7 @@ while eps > minimal_error and iters < maxiter:
     #--- Assigning the last calculated density to nlast
     assign(nlast,u_k.sub(1))
     
-    #--- Rewriting to Psi
-    #psi = (nlast*r**(3/2)/(2*sqrt(2)/3*math.pi**2*(Z/a_0)**(3/2)))**(2/3)
-    #plotting_psi(psi, "Psi vs alpha*radial")
-
-    #psi2 = nlast**(2/3)*r*(3*math.pi**2/(2*sqrt(2)))**(2/3)*a_0/Z 
-    #plotting_psi(psi2, " PSI vs Aplha*Radial - 2nd Version")
-    
+   
     
     #---- Taking the step for u_n and v_h ------------
     u_k.vector()[:] = u_k.vector()[:] + omega*du.vector()[:]
@@ -327,6 +331,6 @@ while eps > minimal_error and iters < maxiter:
     #print("Minval after correction:",minval)
     print('Check end of loop, iteration: ', iters)
 
-plotting_normal(nlast, "Final Density normal plot ")
-plotting_sqrt(nlast, "Final Density SQRT plot")
-plotting_psi(nlast, "Final Psi ")
+#plotting_normal(nlast, "Final Density normal plot ")
+#plotting_sqrt(nlast, "Final Density SQRT plot")
+#plotting_psi(nlast, "Final Psi ")

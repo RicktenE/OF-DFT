@@ -42,25 +42,30 @@ except Exception:
     import pydefuse
 
 def main():
-    parser = argparse.ArgumentParser(description="PyDeFuSE")
-    parser.add_argument('-debug', action='store_true')
-    parser.add_argument('file', metavar='run', nargs='*', help='input file')
-    args = parser.parse_args()    
+#    parser = argparse.ArgumentParser(description="PyDeFuSE")
+#    parser.add_argument('-debug', action='store_true')
+#    parser.add_argument('file', metavar='run', nargs='*', help='input file')
+#    args = parser.parse_args()    
 
-    if len(args.file) == 0:
-        files = ["defuse.in"]
-    else:
-        files=args.file
+#    if len(args.file) == 0:
+#        files = ["defuse.in"]
+#    else:
+#        files=args.file
 
     print ("=====================================================================")
     print ("======== PyDeFuSE starts",time.strftime("%c"))
     print ("=====================================================================")    
 
-    rs = numpy.arange(0.1,10,0.1)
+    rs = numpy.arange(0.1,10,0.1) # Begin, End, vertices interval for mesh and boundary conditions
+    
     #functionals = eval(data['functionals'],{},{'tf':pydefuse.func_tf, 'd':pydefuse.func_dirac, 'w':pydefuse.func_weizsacker})
-    functionals = [pydefuse.func_tf]
-    N = 1
-    Z = 1
+#    functionals = [pydefuse.func_tf] # TF
+    functionals = [pydefuse.func_tf, pydefuse.func_dirac, pydefuse.func_weizsacker]
+    Z = periodic_table['Kr']
+    N = Z       #neutral
+#    electron_deficiency = 2 
+#    N = Z - electron_deficiency
+    
     if N is not None:
         N = int(N)
     #print_timings = eval(data['print_timings'])
@@ -69,11 +74,14 @@ def main():
     ofdftradial.initialize()
     ofdftradial.prepare_starting_mesh()
     ofdftradial.prepare_starting_density()
+#    ofdftradial.solve_newton_n()
     ofdftradial.solve_newton_vh()
 #    ofdftradial.run()
     ofdftradial.calculate_energies()
+
     
     pydefuse.chronicle.printall()
+    ofdftradial.print_energies()
         
     print ("=====================================================================")
     print ("======== PyDeFuSE stops",time.strftime("%c"))
