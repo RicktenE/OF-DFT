@@ -252,12 +252,13 @@ class OfdftRadial(object):
                 potexpr = -self.Z/r
 
             chronicle.start("Calculate functionals")
+            densobj = DensityRadialWeakForm(n, v)
             funcpots = 0
-            densobj = DensityFields(n,gr2,la)
-            ## TODO, if tf already in potentials, skip that term instead
             for f in self.functionals:
-                funcpots += f.potential_enhancement_expr(densobj)
-            #chronicle.stop()
+                if isinstance(f,tuple):
+                    funcpots += Constant(f[0]*f[1].potential_weakform(densobj))
+                else:
+                    funcpots += f.potential_weakform(densobj)
 
             # The adjustment of mu isn't very fundamental, there will be a component of mu hidden as an offset in v_h,
             # but this doesn't matter, unless one want an actual value for mu
@@ -344,8 +345,6 @@ class OfdftRadial(object):
 #             pylab.ylabel("n[r]")
 # =============================================================================
 
-            
-
             #----- plotting SQRT ----- #
             pylab.clf()
             rplot = self.rs
@@ -358,6 +357,7 @@ class OfdftRadial(object):
             pylab.xlabel("SQRT(R)")
             pylab.ylabel("R * SQRT(density")
 
+
 # =============================================================================
 #             #------ plotting PSI ----#
 #             a_0 = 1 # Hatree units
@@ -368,13 +368,14 @@ class OfdftRadial(object):
 #             x = rplot*Alpha_
 #             y = [n(v)**(2/3)*v*(3*math.pi**2/(2*numpy.sqrt(2)))**(2/3)  for v in rplot]
 #             #x = numpy.logspace(-5,2,100)
-#         
-#             pylab.plot(x,y,'bx-')
+#             
+#             pylab.plot(x,y,'b')       
 #             pylab.title("Density")
 #             pylab.pause(0.0001)
 #             pylab.xlabel("Alpha * R")
 #             pylab.ylabel("Psi")
 # =============================================================================
+            
 
 # =============================================================================
 #             #plotting_normal(n, "density")
@@ -416,6 +417,7 @@ class OfdftRadial(object):
 # =============================================================================
            
         self.n = n
+
 
 
 
