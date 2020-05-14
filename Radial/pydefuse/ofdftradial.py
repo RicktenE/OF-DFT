@@ -176,11 +176,13 @@ class OfdftRadial(object):
         alpha = 4.0/1.0*(2.0*self.Z/(9.0*pi**2))**(1.0/3.0)
         mu = 1.0
         
-        def inner_boundary(x, on_boundary):
-            return on_boundary and near(x[0],self.rs[0])
-        
-        def outer_boundary(x, on_boundary):
-            return on_boundary and near(x[0],self.rs[-1])
+# =============================================================================
+#         def inner_boundary(x, on_boundary):
+#             return on_boundary and near(x[0],self.rs[0])
+#         
+#         def outer_boundary(x, on_boundary):
+#             return on_boundary and near(x[0],self.rs[-1])
+# =============================================================================
 
         u_k = interpolate(Constant(-1.0), V)  # previous (known) u
         n = Function(V)

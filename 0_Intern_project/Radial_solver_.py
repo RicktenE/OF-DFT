@@ -25,16 +25,16 @@ plt.close('all')
 
 """---------------------------------------------------------------------------"""
 #Element H
-Z = 1   # Hydrogen
-N = Z 		  # Neutral
+#Z = 1   # Hydrogen
+#N = Z 		  # Neutral
 
 #Element Ne
 #Z = Constant(10) # Neon
 #N = Z 		  # Neutral
 
 #Element Kr
-#Z = Constant(36) # Krypton
-#N = Z 		  # Neutral 
+Z = Constant(36) # Krypton
+N = Z 		  # Neutral 
 
 a_0 = 1 # Hatree units
 Alpha = (4/a_0)*(2*Z/(9*pi**2)**(1/3))
@@ -111,7 +111,7 @@ def plotting_sqrt(u,title):
 
 # Create mesh and define function space
 start_x = 0.1
-end_x = 20
+end_x = 9.0
 amount_vertices = 200
 mesh = IntervalMesh(amount_vertices,start_x, end_x) # Splits up the interval [0,1] in (n) elements 
 
@@ -145,7 +145,7 @@ def boundary_R(x, on_boundary):
     return on_boundary and near(x[0], end_x, tol)
 
 #Defining expression on left boundary
-n_L = Expression('1', degree=1)         
+n_L = Expression('0', degree=1)         
 bc_L = DirichletBC(V, n_L, boundary_L)  
     
 #Defining expression on right boundary
@@ -153,7 +153,8 @@ n_R = Expression('0', degree=1)
 bc_R = DirichletBC(V, n_R, boundary_R) 
     
 #collecting the left and right boundary in a list for the solver to read
-bcs = [bc_L, bc_R]
+#bcs = [bc_L, bc_R]
+bcs = []
 """-------------------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------------------- 
                     Defning external potential v[r] and Initial density n_1[r]
@@ -163,13 +164,13 @@ bcs = [bc_L, bc_R]
 Ex = -Z/r
 
 #------ Initial density ------
-n_i = Expression('a*exp(-b*pow(x[0], 2))', degree = 2, a = 1, b=0.5)
+n_i = Expression('a*exp(-b*pow(x[0], 2))', degree = 2, a = 1, b=0.05)
 #n_i = Constant(1)
 
 u_n = interpolate(n_i, V)
 
 #plotting_normal(u_n,"Initial density--pre correction")
-"""
+
 u = TrialFunction(V)
 v = TestFunction(V)
 a = -u.dx(0)*v.dx(0)*dx 
@@ -178,8 +179,8 @@ A,  b = assemble_system(a, L, bcs)
 u_k = Function(V)
 solve(A, u_n.vector(), b)
 
-plotting_normal(u_n,"Initial density-- Post initial solve --Pre correction")
-"""
+#plotting_normal(u_n,"Initial density-- Post initial solve --Pre correction")
+
 #------------Checking amount of electrons ----------------------
 
 intn = float(assemble((u_n)*dx(mesh)))
@@ -188,7 +189,7 @@ u_n.vector()[:] = u_n.vector()[:]*N/intn
 intn = float(assemble((u_n)*dx(mesh)))
 print("[Initial density] Number of electrons at start after adjustment:",intn)
 plotting_normal(u_n,"Initial density--Post correction -- Begin loop")
-print(type(u_n))
+#print(type(u_n))
 """-------------------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------------
                     Defining and solving the variational problem
@@ -212,8 +213,9 @@ nlast = Function(V)
 #redefine boundary conditions for loop iteration
 bc_L_du = DirichletBC(V, Constant(0), boundary_L)
 bc_R_du = DirichletBC(V, Constant(0), boundary_R)
-bcs_du = [bc_L_du, bc_R_du]
+#bcs_du = [bc_L_du, bc_R_du]
 
+bcs_du = []
 """---------------------------------------------------------------------------"""
 ## ------ Tweaking values -------
 neg_correction = 0.1
@@ -232,16 +234,16 @@ while eps > minimal_error and iters < maxiter:
     (v_hk, u_nk) = split(u_k)
     
     #plotting_psi(nlast, "Psi begin of loop ")
-    #plotting_sqrt(u_nk, "density pre solver")   #For verifying with 'accurate solution...' paper
-    plotting_normal(u_nk,"density pre solver")
+    plotting_sqrt(u_nk, "density pre solver")   #For verifying with 'accurate solution...' paper
+    #plotting_normal(u_nk,"density pre solver")
     #---- Setting up functionals -------------------
     TF = (5.0/3.0)*CF*u_nk**(2.0/3.0)*pr
     DIRAC = (-4.0/3.0)*CX*pow(u_nk,(1.0/3.0))*pr
     WEIZSACKER = (1.0/8.0*(dot(grad(u_nk),grad(u_nk))/		 (u_nk**2)*pr+(1.0/4.0*(dot(grad(u_nk),grad(pr)))/u_nk)))
     funcpots = 0
     funcpots = TF \
-		#+ WEIZSACKER \
-        #+ DIRAC 
+		+ WEIZSACKER \
+       + DIRAC 
       
     
     #---- Solving v_h and u_n ----------------------

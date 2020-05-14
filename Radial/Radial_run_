@@ -56,7 +56,7 @@ def main():
     print ("======== PyDeFuSE starts",time.strftime("%c"))
     print ("=====================================================================")    
 
-    rs = numpy.arange(0.01,9.0,0.005) # Begin, End, vertices interval for mesh and boundary conditions
+    rs = numpy.arange(0.05, 9.0, 0.005) # Begin, End, vertices interval for mesh and boundary conditions
     
     #functionals = eval(data['functionals'],{},{'tf':pydefuse.func_tf, 'd':pydefuse.func_dirac, 'w':pydefuse.func_weizsacker})
 #    functionals = [pydefuse.func_tf] # TF
@@ -70,7 +70,7 @@ def main():
         N = int(N)
     #print_timings = eval(data['print_timings'])
     
-    ofdftradial = pydefuse.OfdftRadial(rs, Z, N, functionals, cuspcond = False)
+    ofdftradial = pydefuse.OfdftRadial(rs, Z, N, functionals, cuspcond = False, basestep = 0.1)
     ofdftradial.initialize()
     ofdftradial.prepare_starting_mesh()
     ofdftradial.prepare_starting_density()
