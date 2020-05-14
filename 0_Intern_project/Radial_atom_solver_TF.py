@@ -20,11 +20,33 @@ import math
 import numpy as np
 from fenics import *
 from matplotlib import pyplot as plt
-
+import pylab
 
 plt.close('all')
 
+"""-------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------
+                    Plot function
+----------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------"""
+  
 
+def plotting_psi(u,title):
+    pylab.clf()
+    
+    rplot = mesh.coordinates()
+    x = rplot
+    #x = numpy.logspace(-5,2,100)
+    y = [u(v) for v in rplot]
+
+    pylab.plot(x,y,'bx-')
+    pylab.title(title)
+    pylab.pause(1)
+    pylab.grid
+    pylab.xlabel("Alpha * R")
+    pylab.ylabel("Psi")
+
+    return 
 """-------------------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------------------- 
                     Creating the mesh 
@@ -106,10 +128,7 @@ bc_R_du = DirichletBC(V, Constant(0), boundary_R)
 bcs_du = [bc_L_du, bc_R_du]
 
 
-#Redifine trial function and derivative of function
 du_ = TrialFunction(V)
-F  = -u_k.dx(0)*v.dx(0)*dx - Alpha**(-1/2.0)*(1.0/(sqrt(r)))*u_k**(3/2)*v*dx
-J = derivative(F, u_k, du_)
 
 # Start second solve
 du = Function(V)
@@ -122,20 +141,25 @@ eps = 1.0
 iter = 0
 maxiter = 500
 while eps > tol and iter < maxiter:
-    plotting_normal(u_k,'Density')
     iter += 1
+    
+    #Redifine trial function and derivative of function
+    F  = -u_k.dx(0)*v.dx(0)*dx - Alpha**(-1/2.0)*(1.0/(sqrt(r)))*u_k**(3/2)*v*dx
+    J = derivative(F, u_k, du_)
+    plotting_psi(u_k,'Density - PSI')
+
     A, b = assemble_system(J, -F, bcs_du)
     solve(A, du.vector(), b)
     eps = np.linalg.norm(np.array(du.vector()), ord=np.Inf)
     print ('Norm:', eps)
     u.vector()[:] = u_k.vector() + omega*du.vector()
     u_k.assign(u)
-    plotting_normal(u_k, 'Du')
+#    plotting_normal(u_k, 'Du')
      
 gr = project(u_k.dx(0),V)
 nr = project(Z/(4.0*pi)*gr.dx(0)/r,V)
 
-plotting_normal(u_k, "density")
+plotting_psi(u_k, "density - PSI")
 #plotting_normal(gr, " GR" )
 #plotting_normal(nr, " NR")
 

@@ -56,8 +56,8 @@ def main():
     print ("======== PyDeFuSE starts",time.strftime("%c"))
     print ("=====================================================================")    
 
-    rs = numpy.arange(0.05, 9.0, 0.005) # Begin, End, vertices interval for mesh and boundary conditions
-    
+    rs = numpy.arange(0.05, 5.0, 0.05) # Begin, End, vertices interval for mesh and boundary conditions
+# try it out    rs = np.array(rs)
     #functionals = eval(data['functionals'],{},{'tf':pydefuse.func_tf, 'd':pydefuse.func_dirac, 'w':pydefuse.func_weizsacker})
 #    functionals = [pydefuse.func_tf] # TF
     functionals = [pydefuse.func_tf, pydefuse.func_dirac, pydefuse.func_weizsacker]
