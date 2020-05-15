@@ -1,4 +1,0 @@
-/tmp/tmpkbc6akpq/dolfin_expression_7f37c66de3fb04f2dbee7850cca9543a.cpp: In member function ‘virtual void dolfin::dolfin_expression_7f37c66de3fb04f2dbee7850cca9543a::eval(Eigen::Ref<Eigen::Matrix<double, -1, 1> >, Eigen::Ref<const Eigen::Matrix<double, -1, 1> >) const’:
-/tmp/tmpkbc6akpq/dolfin_expression_7f37c66de3fb04f2dbee7850cca9543a.cpp:65:23: error: ‘rho0’ was not declared in this scope
-           values[0] = rho0*exp(-fac*Z*x[0]);
-                       ^~~~
