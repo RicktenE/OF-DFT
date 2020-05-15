@@ -61,9 +61,9 @@ def plotting_psi(u,title):
     
     #x = numpy.logspace(-5,2,100)
     y = [u(v)**(2/3)*v*(3*math.pi**2/(2*np.sqrt(2)))**(2/3)  for v in rplot]
-    pylab.plot(x,y,'bx-')
+    pylab.plot(x,y,'kx-')
     pylab.title(title)
-    pylab.pause(0.001)
+    pylab.pause(0.1)
     pylab.xlabel("Alpha * R")
     pylab.ylabel("Psi")
 
@@ -77,9 +77,9 @@ def plotting_normal(u,title):
     #x = numpy.logspace(-5,2,100)
     y = [u(v) for v in rplot]
 
-    pylab.plot(x,y,'bx-')
+    pylab.plot(x,y,'kx-')
     pylab.title(title)
-    pylab.pause(1)
+    pylab.pause(0.1)
     pylab.grid
     pylab.xlabel("r")
     pylab.ylabel("n[r]")
@@ -94,7 +94,7 @@ def plotting_sqrt(u,title):
     #x = numpy.logspace(-5,2,100)
     y = [v*sqrt(u(v)) for v in rplot] 
     
-    pylab.plot(x,y,'bx-')
+    pylab.plot(x,y,'kx-')
     pylab.title(title)
     pylab.pause(0.1)
     pylab.xlabel("SQRT(R)")
@@ -110,9 +110,12 @@ def plotting_sqrt(u,title):
 
 
 # Create mesh and define function space
-start_x = 0.1
-end_x = 9
-amount_vertices = 200
+rs = np.arange(0.1,25,0.1)
+#rs = np.array(exp(rs))
+
+start_x = rs[0]
+end_x = rs[-1]
+amount_vertices = len(rs)
 mesh = IntervalMesh(amount_vertices,start_x, end_x) # Splits up the interval [0,1] in (n) elements 
 
 #print("MES COORDS",np.shape(mesh.coordinates()))
@@ -134,7 +137,7 @@ r = SpatialCoordinate(mesh)[0] # r are the x coordinates.
 -------------------------------------------------------------------------------------------"""
 
 #Defining the tolerance on the boundaries 
-tol = 1E-14
+tol = 1E-13
 
 #Defining the left boundary
 def boundary_L(x, on_boundary):
@@ -157,46 +160,81 @@ bc_R = DirichletBC(V, n_R, boundary_R)
 bcs = []
 """-------------------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------------------- 
-                    Defning external potential v[r] and Initial density n_1[r]
+                    Defning external potential v[r] 
+                    Initial density n_1[r]
+                    Hartree potential v_h
 ----------------------------------------------------------------------------------------------
 -------------------------------------------------------------------------------------------"""
 # External potential
 Ex = -Z/r
 
-#------ Initial density ------
+#########------ Initial density ------##########
 n_i = Expression('a*exp(-b*pow(x[0], 2))', degree = 2, a = 1, b=0.05)
+#n_i = Expression('rho0*exp(-fac*Z*x[0])', degree=2, Z=Z,fac=1.8,rho0=5832)
+
 #n_i = Constant(1)
 
 u_n = interpolate(n_i, V)
 
-#plotting_normal(u_n,"Initial density--pre correction")
+##plotting_sqrt(u_n, "PRE first solve")
 
 u = TrialFunction(V)
 v = TestFunction(V)
-a = -u.dx(0)*v.dx(0)*dx 
-L = sqrt(n_i)**3*v*dx
+a = u.dx(0)*v.dx(0)*dx 
+L = u_n**(3/2)*v*dx
+#L = sqrt(u_n)*3*v*dx
+#L = u_n*v*dx
+
 A,  b = assemble_system(a, L, bcs)
-u_k = Function(V)
+
 solve(A, u_n.vector(), b)
+
+##plotting_sqrt(u_n, "POST first solve")
+
+
+
 
 
 #------------Checking amount of electrons ----------------------
 
+
 intn = float(assemble((u_n)*dx(mesh)))
-print("[Initial density] Number of electrons before adjustment:"+str(intn))
+print("[Initial density] Number of electrons before adjustment:", intn)
 u_n.vector()[:] = u_n.vector()[:]*N/intn  
 intn = float(assemble((u_n)*dx(mesh)))
 print("[Initial density] Number of electrons at start after adjustment:",intn)
-#plotting_sqrt(u_n,"Initial density--Post correction -- Begin loop")
-#print(type(u_n))
 
+
+plotting_sqrt(u_n,"PRE neg fix ")
+nvec = u_n.vector()
+nvec[nvec<0.0]=0.0
+plotting_sqrt(u_n,"POST neg fix ")
+
+#######----- Initializing boundary conditions on Hartree potential ---###
+
+v_h = interpolate(Constant(-1), V)
+
+# =============================================================================
+# u = TrialFunction(V)
+# v = TestFunction(V)
+# a = u.dx(0)*v.dx(0)*dx 
+# L = v_h*v*dx
+# #L = sqrt(n_i)*v*dx
+# #L = n_i*v*dx
+# A,  b = assemble_system(a, L, bcs)
+# 
+# plotting_sqrt(v_h, "VH  - PRE first solve")
+# 
+# solve(A, v_h.vector(), b)
+# 
+# plotting_sqrt(v_h, "VH  - POST first solve")
+# =============================================================================
 """-------------------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------------
                     Defining and solving the variational problem
                     defining trial and test functions
 ----------------------------------------------------------------------------------------------
 -------------------------------------------------------------------------------------------"""
-v_h = interpolate(Constant(-1), V)
 
 mixed_test_functions = TestFunction(W)
 (qr, pr) = split(mixed_test_functions)
@@ -220,7 +258,7 @@ bcs_du = []
 ## ------ Tweaking values -------
 neg_correction = 0.1
 omega = 1
-mu = 100
+mu = 1
 
 eps = 1
 iters = 0
@@ -245,15 +283,19 @@ def vh_to_dens(vh,dens):
 while eps > minimal_error and iters < maxiter:
     iters += 1 
     
+    
     # Put the initial [density and v_h] in u_k
     (v_hk, u_nk) = split(u_k)
+    
+    
+    
     #plotting_sqrt(u_k.sub(1), " U-k(1) in loop")
     #plotting_psi(nlast, "Psi begin of loop ")
     #plotting_normal(v_hk, "Hartree potential" )
-    
-    plotting_sqrt(u_nk, "density pre solver")   #For verifying with 'accurate solution...' paper
-    
+    plotting_sqrt(u_nk, "In loop PRE solver")   
     #plotting_normal(u_nk,"density pre solver")
+    
+    
     #---- Setting up functionals -------------------
     TF = (5.0/3.0)*CF*u_nk**(2.0/3.0)*pr
     DIRAC = (-4.0/3.0)*CX*pow(u_nk,(1.0/3.0))*pr
@@ -263,17 +305,27 @@ while eps > minimal_error and iters < maxiter:
 		+ WEIZSACKER \
        + DIRAC 
       
+# =============================================================================
+#     # correct for possible negative mu
+#     u_i = project(Constant(mu) -Ex - u_nk,V)
+#     minval = u_i.vector().min()
+#     if minval < 0.0:
+#         mu-=minval-1e-14
+#     u_i = project(Constant(mu) -Ex - u_nk,V)
+#     print("MINIMUM VALUE",u_i.vector().min())
+# =============================================================================
+        
     
     #---- Solving v_h and u_n ----------------------
     # rotational transformation of nabla^2 v_h = -4 pi n(r)
     F = - v_hk.dx(0)*qr.dx(0)*r/2*dx    \
-    + v_hk.dx(0)*qr*dx  \
-    + 4*math.pi*u_nk*qr*r/2*dx              
+    + 4*math.pi*u_nk*qr*r/2*dx          \
+    + v_hk.dx(0)*qr*dx             
          
     # Second coupled equation: Ts[n] + Exc[n] + Vext(r) - mu = 0
     F = F + funcpots*dx \
-    + v_hk*pr*dx \
-    + Ex*pr*dx +\
+    + v_hk*pr*dx        \
+    + Ex*pr*dx          \
     - Constant(mu)*pr*dx
 
     #Calculate Jacobian
@@ -282,18 +334,8 @@ while eps > minimal_error and iters < maxiter:
     #Assemble system
     A, b = assemble_system(J, -F, bcs_du)
     
-    """
-    rvec = mesh.coordinates()
-    nvec = np.array([v_hk(v) for v in rvec])
-    minval = nvec.min()
-    print("v_hk minimum:",minval)
-
-    rvec = mesh.coordinates()
-    nvec = np.array([u_nk(v) for v in rvec])
-    minval = nvec.min()
-    print("u_nk minimum:",minval) 
-    """
     solve(A, du.vector(), b)
+    
     
     # Conserve memory by reusing vectors for v_h and u_n to keep dv_h and du_n
     dv_h = v_h                  #step to transfer type info to dv_h
@@ -303,20 +345,22 @@ while eps > minimal_error and iters < maxiter:
     du_n = u_n                  #step to transfer type info to du_n
     assign(du_n, du.sub(1))     #step to transfer values to du_n
     u_n = None                  #empty u_n
-       
-
+      
+    
+    
+    
     #plotting_normal(du_n, "du_n (Step for density)") #for verifying with TF results
-    #plotting_sqrt(du_n,"du_n (step for the density to take)") #For verifying with TFDW
+    #plotting_sqrt(du_n,"du - post solver)") #For verifying with TFDW
     #plotting_psi(du_n,"du_n (step for psi to take)") #For verifying with TFDW
     
+    
+   
+    
     #---- Calculate the Error -----------------------
-    avg = sum(du_n.vector())/len(du_n.vector())
-    eps = np.linalg.norm(du_n.vector()-avg, ord=np.Inf)
+    avg = sum(du.vector())/len(du.vector())
+    eps = np.linalg.norm(du.vector()-avg, ord=np.Inf)
     if math.isnan(eps):
-        eps = 10
-# =============================================================================
-#             if eps =10.0 Exception("Residual error is NaN")
-# =============================================================================
+        raise Exception("Residual error is NaN")
     print("EPS is:",eps)
         
     #--- Assigning the last calculated density to nlast
@@ -327,7 +371,6 @@ while eps > minimal_error and iters < maxiter:
     #---- Taking the step for u_n and v_h ------------
     u_k.vector()[:] = u_k.vector()[:] + omega*du.vector()[:]
         
- 
     # Conserve memory by reusing vectors for u_n, v_h also as du_n, dv_h
     v_h = dv_h 
     assign(v_h, u_k.sub(0))
@@ -337,36 +380,83 @@ while eps > minimal_error and iters < maxiter:
     assign(u_n, u_k.sub(1))
     du_n = None
     
-    #vh_to_dens(v_h, u_n) 
-        
-     #---- Ad hoc negative density fix -------
-    minval = u_n.vector().min()
-    print("Going to add:", minval+neg_correction)
-    if minval < 0.0:
-        u_n.vector()[:]= u_n.vector()[:]-minval+neg_correction
-        intn = float(assemble((u_n)*dx(mesh)))
-        print("Number of electrons before correction:",intn)
-        
-        assign(u_k.sub(1),u_n)
-        u_n.vector()[:] = u_n.vector()[:]*N/intn    
-        intn = float(assemble((u_n)*dx(mesh)))            
-        print("Number of electrons after correction:",intn)
-    else:
-        assign(u_k.sub(1),u_n)
     
-    minval = u_k.sub(1).vector().min()
     
-
+    
 # =============================================================================
-#     nvec = u_n.vector()
-#     nvec[nvec<0.1]=0.1
+# #---- Ad hoc negative density fix -------
+#     rvec = mesh.coordinates()
+#     nvec = np.array([u_n(v) for v in rvec])
+#     minval = nvec.min()
+#     neg_correction = 0.01
 #     
-#     assign(u_k.sub(1),u_n)
+#     print("Going to add:", -1*minval+neg_correction)
+#     if minval < 0.0:
+#         u_n.vector()[:]= u_n.vector()[:]-minval+neg_correction
+#         
+#         assign(u_k.sub(1),u_n)
+#     else:
+#         assign(u_k.sub(1),u_n)
 # =============================================================================
+    
+# =============================================================================
+#     rvec = mesh.coordinates()
+#     nvec = np.array([u_n(v) for v in rvec])
+#     minval = nvec.min()
+#     print("u_n minimum from array:",minval)
+#        
+#     nvec[nvec<0.0]=0.0001
+# 
+#     minval = nvec.min()
+#     print("minval POST neg fix",minval)
+#     
+#     assign(u_k.sub(1),u_n)    
+# =============================================================================
+    
+#    vh_to_dens(v_h, u_n)
+    
+    nvec = u_n.vector()
+    minval = nvec.min()
+    print("minval PRE neg fix:",minval)
+    #print("u_n vector PRE neg fix: ", nvec.get_local())
+    #plotting_sqrt(u_n, "PRE NEG FIX")
+    
+    #[nvec[i] == 0.0 for i in range(len(nvec.get_local()))]    
+    
+    nvec[nvec<0.0]=0.0
+    
+    #not nvec[nvec<0.0]= 0.0001 ; plotting sqrt(0.0001) != 0 => 0.1    
+    nvec = u_n.vector()
+    minval = nvec.min()
+    print("minval POST neg fix",minval)
+    #print("u_n vector POST neg fix: ", nvec.get_local())
+    #plotting_sqrt(u_n, "POST NEG FIX")
+    
+    assign(u_k.sub(1),u_n)    
 
-    #print("Minval after correction:",minval)
+
+
+
+        
+    intn = float(assemble((u_n)*dx(mesh)))
+    print("Number of electrons before correction:",intn)
+    u_n.vector()[:] = u_n.vector()[:]*N/intn    
+    intn = float(assemble((u_n)*dx(mesh)))            
+    print("Number of electrons after correction:",intn)
+    
     print('Check end of loop, iteration: ', iters)
 
-#plotting_normal(nlast, "Final Density normal plot ")
-#plotting_sqrt(nlast, "Final Density SQRT plot")
-#plotting_psi(nlast, "Final Psi ")
+    
+    # =============================================================================
+#     """
+#     rvec = mesh.coordinates()
+#     nvec = np.array([v_hk(v) for v in rvec])
+#     minval = nvec.min()
+#     print("v_hk minimum:",minval)
+# 
+#     rvec = mesh.coordinates()
+#     nvec = np.array([u_nk(v) for v in rvec])
+#     minval = nvec.min()
+#     print("u_nk minimum:",minval) 
+#     """
+# =============================================================================

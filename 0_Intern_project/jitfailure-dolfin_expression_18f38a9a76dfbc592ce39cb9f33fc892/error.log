@@ -1,0 +1,11 @@
+/tmp/tmp7_0pywxj/dolfin_expression_18f38a9a76dfbc592ce39cb9f33fc892.cpp: In member function ‘virtual void dolfin::dolfin_expression_18f38a9a76dfbc592ce39cb9f33fc892::eval(Eigen::Ref<Eigen::Matrix<double, -1, 1> >, Eigen::Ref<const Eigen::Matrix<double, -1, 1> >) const’:
+/tmp/tmp7_0pywxj/dolfin_expression_18f38a9a76dfbc592ce39cb9f33fc892.cpp:64:39: error: expected ‘;’ before ‘)’ token
+           values[0] = a*exp(-b*Z*x[0]));
+                                       ^
+/tmp/tmp7_0pywxj/dolfin_expression_18f38a9a76dfbc592ce39cb9f33fc892.cpp: In member function ‘virtual double dolfin::dolfin_expression_18f38a9a76dfbc592ce39cb9f33fc892::get_property(std::__cxx11::string) const’:
+/tmp/tmp7_0pywxj/dolfin_expression_18f38a9a76dfbc592ce39cb9f33fc892.cpp:76:11: warning: this ‘if’ clause does not guard... [-Wmisleading-indentation]
+           if (name == "Z") return Z;          if (name == "a") return a;          if (name == "b") return b;
+           ^~
+/tmp/tmp7_0pywxj/dolfin_expression_18f38a9a76dfbc592ce39cb9f33fc892.cpp:76:47: note: ...this statement, but the latter is misleadingly indented as if it were guarded by the ‘if’
+           if (name == "Z") return Z;          if (name == "a") return a;          if (name == "b") return b;
+                                               ^~

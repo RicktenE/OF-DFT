@@ -1,0 +1,7 @@
+/tmp/tmpwi2_dlso/dolfin_expression_083c79bf8dbcd966810089087d92d56f.cpp: In member function ‘virtual void dolfin::dolfin_expression_083c79bf8dbcd966810089087d92d56f::eval(Eigen::Ref<Eigen::Matrix<double, -1, 1> >, Eigen::Ref<const Eigen::Matrix<double, -1, 1> >) const’:
+/tmp/tmpwi2_dlso/dolfin_expression_083c79bf8dbcd966810089087d92d56f.cpp:62:23: error: ‘a’ was not declared in this scope
+           values[0] = a*exp(-b*Z*x[0]));
+                       ^
+/tmp/tmpwi2_dlso/dolfin_expression_083c79bf8dbcd966810089087d92d56f.cpp:62:32: error: ‘Z’ was not declared in this scope
+           values[0] = a*exp(-b*Z*x[0]));
+                                ^
