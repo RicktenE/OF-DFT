@@ -323,7 +323,7 @@ class OfdftRadial(object):
             #n = n1
             nvec = n.vector()
             nvec[nvec<0.0]=0.0
-          #  print(nvec[nvec<0.0])
+            print(nvec[nvec<0.0])
             chronicle.stop()    
 
             chronicle.start("calculate electron density gradient and laplacian")

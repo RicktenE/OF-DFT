@@ -96,7 +96,7 @@ def plotting_sqrt(u,title):
     
     pylab.plot(x,y,'kx-')
     pylab.title(title)
-    pylab.pause(0.05)
+    pylab.pause(2)
     pylab.xlabel("SQRT(R)")
     pylab.ylabel("R * SQRT(density")
     
@@ -114,12 +114,17 @@ def plotting_sqrt(u,title):
 # rs = np.arange(0.1,5.0,0.1)
 # rs = np.array((rs**2))
 # =============================================================================
-rs = np.arange(0.1,20.0,0.1)
+rs = np.arange(0.1,25.0,0.1)
 #rs = np.array((rs**2))
 
 start_x = rs[0]
 end_x = rs[-1]
 amount_vertices = len(rs)
+
+start_x = 0.1
+end_x = 25
+amount_vertices = end_x*10
+
 mesh = IntervalMesh(amount_vertices,start_x, end_x) # Splits up the interval [0,1] in (n) elements 
 
 #print("MES COORDS",np.shape(mesh.coordinates()))
@@ -205,9 +210,11 @@ print("[Initial density] Number of electrons at start after adjustment:",intn)
 
 nvec = u_n.vector()
 minval = nvec.min()
-print("minval PRE neg fix:",minval)
-print(" PRE nvec values", nvec.get_local())
-plotting_sqrt(u_n,"PRE neg fix ")
+# =============================================================================
+# print("minval PRE neg fix:",minval)
+# print(" PRE nvec values", nvec.get_local())
+# plotting_sqrt(u_n,"PRE neg fix ")
+# =============================================================================
 # =============================================================================
 # #nvec[nvec<0.0]=0.0  #puts index -1 to 0 ?
 # print("nvec values", nvec.get_local())
@@ -225,14 +232,16 @@ nvec[nvec<0.0] = 0.0   #puts index -1 to 0 ?
 
 nvec = u_n.vector()
 minval = nvec.min()
-print("minval POST neg fix",minval)
-print("POST nvec values", nvec.get_local())
-plotting_sqrt(u_n,"POST neg fix ")
-#######----- Initializing boundary conditions on Hartree potential ---###
-
-v_h = interpolate(Constant(-1), V)
-
 # =============================================================================
+# print("minval POST neg fix",minval)
+# print("POST nvec values", nvec.get_local())
+# plotting_sqrt(u_n,"POST neg fix ")
+# =============================================================================
+#######----- Initializing boundary conditions on Hartree potential ---###
+v_h = interpolate(Constant(-1), V)
+# =============================================================================
+
+# 
 # u = TrialFunction(V)
 # v = TestFunction(V)
 # a = u.dx(0)*v.dx(0)*dx 
@@ -306,8 +315,8 @@ while eps > minimal_error and iters < maxiter:
     # Put the initial [density and v_h] in u_k
     (v_hk, u_nk) = split(u_k)
     
-    #plotting_sqrt(v_hk, "Hartree potential" )
-    plotting_sqrt(u_nk, "In loop PRE solver")   
+    plotting_sqrt(v_hk, "Hartree potential - beginning loop" )
+    plotting_sqrt(u_nk, "Density - beginning loop")   
     
     
     #---- Setting up functionals -------------------
@@ -345,11 +354,17 @@ while eps > minimal_error and iters < maxiter:
     #Calculate Jacobian
     J = derivative(F, u_k, du_trial)
     
+    plotting_sqrt(v_hk, "Hartree potential - After Jacobian calculation" )
+    plotting_sqrt(u_nk, "Density - After Jacobian calculation") 
+    
     #Assemble system
     A, b = assemble_system(J, -F, bcs_du)
     
     solve(A, du.vector(), b)
     
+    plotting_sqrt(du.sub(0), "D v_h - After Solver " )
+    plotting_sqrt(du.sub(1), "D u_n - After Solver ") 
+
     
     # Conserve memory by reusing vectors for v_h and u_n to keep dv_h and du_n
     dv_h = v_h                  #step to transfer type info to dv_h
@@ -360,6 +375,8 @@ while eps > minimal_error and iters < maxiter:
     assign(du_n, du.sub(1))     #step to transfer values to du_n
     u_n = None                  #empty u_n
     
+    plotting_sqrt(dv_h, "D v_h - After 1st memory conservation " )
+    plotting_sqrt(du_n, "D u_n - After 1st memory conservation ") 
 # =============================================================================
 #     dnvec = du_n.vector()
 #     dnvec[dnvec<0.0] = 0.0
@@ -370,8 +387,8 @@ while eps > minimal_error and iters < maxiter:
     #---- Calculate the Error -----------------------
     avg = sum(du_n.vector())/len(du_n.vector())
     eps = np.linalg.norm(du_n.vector()-avg, ord=np.Inf)
-    if math.isnan(eps):
-        raise Exception("Residual error is NaN")
+    #if math.isnan(eps):
+      #  raise Exception("Residual error is NaN")
     print("EPS is:",eps)
         
     #--- Assigning the last calculated density to nlast
@@ -380,7 +397,10 @@ while eps > minimal_error and iters < maxiter:
     
     #---- Taking the step for u_n and v_h ------------
     u_k.vector()[:] = u_k.vector()[:] + omega*du.vector()[:]
-        
+    
+    plotting_sqrt(u_k.sub(0), "Hartree potential - After u_k + omega*du step " )
+    plotting_sqrt(u_k.sub(1), "Density - After u_k + omega*du step ") 
+    
     # Conserve memory by reusing vectors for u_n, v_h also as du_n, dv_h
     v_h = dv_h 
     assign(v_h, u_k.sub(0))
@@ -390,6 +410,8 @@ while eps > minimal_error and iters < maxiter:
     assign(u_n, u_k.sub(1))
     du_n = None
     
+    plotting_sqrt(v_h, "Hartree potential - After 2nd memory conservation " )
+    plotting_sqrt(u_n, "Density - After 2nd memory conservation ") 
     
     
 # =============================================================================
@@ -413,31 +435,42 @@ while eps > minimal_error and iters < maxiter:
 #     print("minval POST neg fix",minval)
 # =============================================================================
     
+    
     nvec = u_n.vector()
     minval = nvec.min()
-    print("minval PRE neg fix:",minval)
-    #print("u_n vector PRE neg fix: ", nvec.get_local())
-    plotting_sqrt(u_n, "PRE NEG FIX")
     
-    #[nvec[i] == 0.0 for i in range(len(nvec.get_local()))]    
-    
-    nvec.get_local()[nvec.get_local()<0.0]=0.0
+    #print("minval PRE neg fix:",minval)
     print(nvec<0.0)
-    print(nvec.get_local())
-    #not nvec[nvec<0.0]= 0.0001 ; plotting sqrt(0.0001) != 0 => 0.1    
+    print("u_n vector PRE neg fix: ", nvec.get_local())
+    plotting_sqrt(v_h, "Hartree potential - PRE neg fix " )
+    plotting_sqrt(u_n, "Density - PRE neg fix") 
+
+    
+#-- negative density fix         
+    for i in range(len(nvec.get_local())):
+        if nvec[i] < 0.001:
+            nvec[i] = 0.01
+            
+#--plot after neg fix     
     nvec = u_n.vector()
     minval = nvec.min()
-    print("minval POST neg fix",minval)
-    #print("u_n vector POST neg fix: 69308830276194", nvec.get_local())
-    plotting_sqrt(u_n, "POST NEG FIX")
+    #print("minval POST neg fix",minval)
+    print("u_n vector POST neg fix: ", nvec.get_local())
+    plotting_sqrt(v_h, "Hartree potential - POST neg fix " )
+    plotting_sqrt(u_n, "Density - POST neg fix") 
      
-        
+##---- correct for number of electrons        
     intn = float(assemble((u_n)*dx(mesh)))
     print("Number of electrons before correction:",intn)
     u_n.vector()[:] = u_n.vector()[:]*N/intn    
     intn = float(assemble((u_n)*dx(mesh)))            
     print("Number of electrons after correction:",intn)
     
+##--- Assigning u_n to u_k    
     assign(u_k.sub(1),u_n)
+    
+    plotting_sqrt(u_k.sub(0), "Hartree potential - End of loop " )
+    plotting_sqrt(u_k.sub(1), "Density - End of loop") 
+    
     print('Check end of loop, iteration: ', iters)
 
