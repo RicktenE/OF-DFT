@@ -468,11 +468,13 @@ while eps > minimal_error and iters < maxiter:
     print(type(u_n))
     
 ##---- correct for number of electrons        
-    intn = float(assemble((u_n)*dx(mesh)))
-    print("Number of electrons before correction:",intn)
-    u_n.vector()[:] = u_n.vector()[:]*N/intn    
-    intn = float(assemble((u_n)*dx(mesh)))            
-    print("Number of electrons after correction:",intn)
+# =============================================================================
+#     intn = float(assemble((u_n)*dx(mesh)))
+#     print("Number of electrons before correction:",intn)
+#     u_n.vector()[:] = u_n.vector()[:]*N/intn    
+#     intn = float(assemble((u_n)*dx(mesh)))            
+#     print("Number of electrons after correction:",intn)
+# =============================================================================
     
 ##--- Assigning u_n to u_k    
     assign(u_k.sub(1),u_n)

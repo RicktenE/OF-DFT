@@ -148,7 +148,7 @@ def plotting_sqrt(u,title):
     
     pylab.plot(x,y,'kx-')
     pylab.title(title)
-    #pylab.waitforbuttonpress()
+#    pylab.waitforbuttonpress()
     pylab.pause(0.1)
     pylab.xlabel("SQRT(R)")
     pylab.ylabel("R * SQRT(density")
@@ -162,7 +162,7 @@ def plotting_sqrt(u,title):
 -------------------------------------------------------------------------------------------""" 
 
 
-rs = np.arange(0.005,36.001,0.01)
+rs = np.arange(0.01,25.0,0.01)
 radius = rs[-1]
 r_inner = 0.0
 rs_outer = [x for x in rs if x > r_inner]
@@ -202,7 +202,7 @@ def boundary_R(x, on_boundary):
     return on_boundary and near(x[0], end_x, tol)
 
 #Defining expression on left boundary
-n_L = Expression('0', degree=1)         
+n_L = Expression('-10', degree=1)         
 bc_L = DirichletBC(V, n_L, boundary_L)  
     
 #Defining expression on right boundary
@@ -210,8 +210,8 @@ n_R = Expression('0', degree=1)
 bc_R = DirichletBC(V, n_R, boundary_R) 
     
 #collecting the left and right boundary in a list for the solver to read
-#bcs = [bc_L, bc_R]
-bcs = []
+bcs = [bc_L, bc_R]
+#bcs = []
 """-------------------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------------------- 
                     Defning external potential v[r] 
@@ -222,83 +222,41 @@ bcs = []
 # External potential
 Ex = -Z/r
 
+startomega = 0.8
+mu = 100
+
 #########------ Initial density ------##########
 #n_i = Expression('a*exp(-b*pow(x[0], 2))', degree = 2, a = 1, b=0.05)
-#n_i = Expression('rho0*exp(-fac*Z*x[0])', degree=2, Z=Z,fac=1.8,rho0=5832)
 n_i = Constant(1)
 
 u_n = interpolate(n_i, V)
 
-##plotting_sqrt(u_n, "PRE first solve")
-
-#u = TrialFunction(V)
-#v = TestFunction(V)
-#a = u.dx(0)*v.dx(0)*dx 
-#L = u_n**(3/2)*v*dx
-#L = sqrt(u_n)*3*v*dx
-#L = u_n*v*dx
-
-#A,  b = assemble_system(a, L, bcs)
-
-#solve(A, u_n.vector(), b)
-
-##plotting_sqrt(u_n, "POST first solve")
-
-# =============================================================================
-# #------------Checking amount of electrons ----------------------
-# 
-# intn = float(assemble((u_n)*dx(mesh)))
-# print("[Initial density] Number of electrons before adjustment:", intn)
-# u_n.vector()[:] = u_n.vector()[:]*N/intn  
-# intn = float(assemble((u_n)*dx(mesh)))
-# print("[Initial density] Number of electrons at start after adjustment:",intn)
-# 
-# =============================================================================
-
-#nvec = u_n.vector()
-#minval = nvec.min()
-#print("minval PRE neg fix:",minval)
-#print(" PRE nvec values", nvec.get_local())
-#plotting_sqrt(u_n,"PRE neg fix ")
-# =============================================================================
-# #nvec[nvec<0.0]=0.0  #puts index -1 to 0 ?
-# print("nvec values", nvec.get_local())
-# 
-# nvec[nvec.get_local()[nvec<20]] = 0.0
-# nvec[nvec.get_local()[-2]] = 0.0
-# nvec[nvec.get_local()[-3]] = 0.0
-# nvec[nvec.get_local()[-4]] = 0.0
-# =============================================================================
-
-
-#nvec[nvec<0.0] = 0.0   #puts index -1 to 0 ?
-#nvec[rs[0]] = 0.0
-
-
-#nvec = u_n.vector()
-#minval = nvec.min()
-#print("minval POST neg fix",minval)
-#print("POST nvec values", nvec.get_local())
-#plotting_log(u_n,"POST neg fix ")
 #######----- Initializing boundary conditions on Hartree potential ---###
 
-v_h = interpolate(Constant(-1), V)
+v_hi = interpolate(Constant(-1), V)
+v_h = Function(V)
+u = TrialFunction(V)
+v = TestFunction(V)
+a = -u.dx(0)*v.dx(0)*dx 
+     
+L = -8.0*sqrt(2.0)/(3.0*pi)*(sqrt(Constant(mu) - Ex - v_hi))**3*v*dx\
+    + (2/r)*v_hi.dx(0)*v*dx
+
+A,  b = assemble_system(a, L, bcs)
+
+solve(A, v_h.vector(), b)
+
+plotting_normal(v_h, "VH  - POST first solve")
 
 # =============================================================================
-# u = TrialFunction(V)
-# v = TestFunction(V)
-# a = u.dx(0)*v.dx(0)*dx 
-# L = v_h*v*dx
-# #L = sqrt(n_i)*v*dx
-# #L = n_i*v*dx
-# A,  b = assemble_system(a, L, bcs)
-# 
-# plotting_sqrt(v_h, "VH  - PRE first solve")
-# 
-# solve(A, v_h.vector(), b)
-# 
-# plotting_sqrt(v_h, "VH  - POST first solve")
+# Vvec = v_h.vector()
+# for i in range(len(Vvec.get_local())):
+#     if Vvec[i] > 0.0:
+#         Vvec[i] = -1
 # =============================================================================
+
+plotting_normal(v_h, "VH  - POST correction")
+
 """-------------------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------------
                     Defining and solving the variational problem
@@ -315,44 +273,20 @@ du = Function(W)
 u_k = Function(W)
 assign(u_k.sub(0), v_h)
 assign(u_k.sub(1), u_n)
-#plotting_sqrt(u_k.sub(1), " U-k(1)")
+
+plotting_normal(u_k.sub(0), "VH  - POST assigning")
+
 nlast = Function(V)
 
-# =============================================================================
-# #redefine boundary conditions for loop iteration
-# bc_L_du = DirichletBC(V, Constant(0), boundary_L)
-# bc_R_du = DirichletBC(V, Constant(0), boundary_R)
-# #bcs_du = [bc_L_du, bc_R_du]
-# =============================================================================
 
 bcs_du = []
-"""---------------------------------------------------------------------------"""
-## ------ Tweaking values -------
-#neg_correction = 0.1
-startomega = 0.8
-mu = 1
+
 
 eps = 1
 iters = 0
 maxiter = 1000
 minimal_error = 1E-10
 
-# =============================================================================
-# def vh_to_dens(vh,dens):
-#     bcs = []
-#     
-#     r = SpatialCoordinate(mesh)[0]
-#     u = TrialFunction(V)
-#     v = TestFunction(V)        
-#     a = u*v*dx
-#     # Works but with oscillations
-#     #L = (-1.0/(4.0*pi))*(2/r*vh.dx(0)*v-vh.dx(0)*v.dx(0))*dx
-#     L = (-1.0/(4.0*pi))*(2/r*vh.dx(0)*v-vh.dx(0)*v.dx(0))*dx
-# 
-#     #a = inner(vh,v)*dx
-#     #L = (-1.0/(4.0*pi))*inner(u.dx(0),v.dx(0))*dx+2/r*inner(u.dx(0),v)*dx
-#     solve(a == L, dens,bcs)
-# =============================================================================
 
 omega = startomega
 while eps > minimal_error and iters < maxiter:
@@ -361,15 +295,15 @@ while eps > minimal_error and iters < maxiter:
     # Put the initial [density and v_h] in u_k
     (v_hk, u_nk) = split(u_k)
     
-    #plotting_sqrt(v_hk, "Hartree potential" )
+    plotting_normal(v_hk, "Hartree potential" )
 #    plotting_log(u_nk, "In loop PRE solver")       
 #    plotting_sqrt(u_nk, " Begin loop. Pre solver" )
     
     #---- Setting up functionals -------------------
     TF = (5.0/3.0)*CF*u_nk**(2.0/3.0)*pr
     DIRAC = (-4.0/3.0)*CX*pow(u_nk,(1.0/3.0))*pr
-#    WEIZSACKER = (1.0/8.0*(dot(grad(u_nk),grad(u_nk))/(u_nk**2)*pr+(1.0/4.0*(dot(grad(u_nk),grad(pr)))/u_nk)))
-    WEIZSACKER = (1.0/8.0*(u_nk.dx(0))*u_nk.dx(0)/(u_nk**2)*pr+(1.0/4.0*(u_nk.dx(0))*pr.dx(0))/u_nk)
+    WEIZSACKER = (1.0/8.0*(dot(grad(u_nk),grad(u_nk))/(u_nk**2)*pr+(1.0/4.0*(dot(grad(u_nk),grad(pr)))/u_nk)))
+#    WEIZSACKER = (1.0/8.0*(u_nk.dx(0))*u_nk.dx(0)/(u_nk**2)*pr+(1.0/4.0*(u_nk.dx(0))*pr.dx(0))/u_nk)
 
     funcpots = 0
     funcpots = TF \
@@ -377,12 +311,13 @@ while eps > minimal_error and iters < maxiter:
         + DIRAC 
       
     # correct for possible negative mu
-    u_i = project(Constant(mu) -Ex - u_nk,V)
-    minval = u_i.vector().min()
+    correction_mu = project(Constant(mu) -Ex - u_nk,V)
+    minval = correction_mu.vector().min()
     if minval < 0.0:
-        mu-=minval-1e-14
-    u_i = project(Constant(mu) -Ex - u_nk,V)
-    print("MINIMUM VALUE",u_i.vector().min())
+        mu-=minval-1e-10
+        print(" New MU: ", mu)
+    correction_mu = project(Constant(mu) -Ex - u_nk,V)
+    print("MINIMUM VALUE",correction_mu.vector().min())
         
     
     #---- Solving v_h and u_n ----------------------
@@ -415,11 +350,6 @@ while eps > minimal_error and iters < maxiter:
     assign(du_n, du.sub(1))     #step to transfer values to du_n
     u_n = None                  #empty u_n
     
-# =============================================================================
-#     dnvec = du_n.vector()
-#     dnvec[dnvec<0.0] = 0.0
-# =============================================================================
-    #plotting_normal(du_n,"du - post solver)") #For verifying with TFDW
 
     #---- Calculate the Error -----------------------
     epsexpr = conditional(lt(r,radius),du_n**2,0.0)
@@ -446,45 +376,37 @@ while eps > minimal_error and iters < maxiter:
     u_n = du_n 
     assign(u_n, u_k.sub(1))
     du_n = None
-    
-    
-    
-# =============================================================================
-# #    vh_to_dens(v_h,u_n)
-# #---- Ad hoc negative density fix -------
-# #    rvec = mesh.coordinates()
-# #    nvec = np.array([u_n(v) for v in rvec])
-#     nvec = u_n.vector()
-#     minval = nvec.min()
-#     neg_correction = 0.001
-#     
-#     print("minval PRE neg fix:",minval)
-# 
-#     if minval < 0.0:
-#         print("Going to add:", -1*minval+neg_correction)
-#         #nvec[:]=nvec[:]-minval+neg_correction
-#         u_n.vector()[:]= u_n.vector()[:]-minval+neg_correction
-#     
-#     nvec = u_n.vector()
-#     minval = nvec.min()
-#     print("minval POST neg fix",minval)
-# =============================================================================
+#------------------------- electron correction    
+    elecint = conditional(gt(u_n,0.0),u_n *r*r ,0.0)
+    # if u_n > 0.0 elecint == u_n*r^2 
+    # else          elecint == 0.0
+    intn =4*math.pi*float(assemble((elecint)*ds))
+    print("Electron count before correction:",intn)
 
-    nvec = u_n.vector()
-    minval = nvec.min()
-    print("minval PRE neg fix:",minval)    
-
-    elecint = conditional(gt(u_n,0.0),u_n * r * r,0.0)
-    intn = 4.0*pi*float(assemble((elecint)*dx(mesh)))
-    print("Electron count:",intn)
 
     if intn <= 1e-4:
         print("Electron count too small")
         u_n = interpolate(Constant(1.0), V)
+
+# =============================================================================
+#     elif intn != N:
+#         u_n.vector()[:] = u_n.vector()[:]*N/intn  
+#         elecint = conditional(gt(u_n,0.0),u_n*r*r,0.0) 
+#     else: 
+#         u_n.vector()[:] = u_n.vector()[:]
+# =============================================================================
+        
+    intn = 4*math.pi*float(assemble((elecint)*dx))            
+    print("Number of electrons after correction:",intn)    
+#--------------------------neg dens fix    
     
     plotting_log(u_n, "PRE NEG FIX")
 #    plotting_sqrt(u_n, "pre neg fix")
 
+    nvec = u_n.vector()
+    minval = nvec.min()
+    print("minval PRE neg fix:",minval)    
+    
     x = rs_outer
     y = [u_n(rv) for rv in x]
     radius = x[-1]
@@ -516,9 +438,11 @@ while eps > minimal_error and iters < maxiter:
     #fitfunc = project(fitexpr2, V)
     #assign(u_n,fitfunc)
 
-    for i in range(len(nvec.get_local())):
-        if nvec[i] < 1e-10:
-            nvec[i] = 1e-10
+# =============================================================================
+#     for i in range(len(nvec.get_local())):
+#         if nvec[i] < 1e-10:
+#             nvec[i] = 1e-10
+# =============================================================================
             
     plotting_log_keep(u_n, "DENS POST NEG FIX")
 #    plotting_sqrt(u_n, " Density post neg fix" )
