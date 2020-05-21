@@ -38,6 +38,10 @@ plt.close('all')
 Z = Constant(36) # Krypton
 N = Z 		  # Neutral 
 
+#Element 115
+#Z = Constant(115)
+#N = Z
+
 a_0 = 1 # Hatree units
 Alpha = (4/a_0)*(2*Z/(9*pi**2)**(1/3))
 
@@ -456,27 +460,60 @@ while eps > minimal_error and iters < maxiter:
     #fitfunc = project(fitexpr, V)
     #assign(u_n,fitfunc)
 
-
-    #[nvec[i] == 0.0 for i in range(len(nvec.get_local()))]    
-    
-    #nvec.get_local()[nvec.get_local()<0.0]=0.0
-    #print(nvec<0.0)
-    #print(nvec.get_local())
-    #not nvec[nvec<0.0]= 0.0001 ; plotting sqrt(0.0001) != 0 => 0.1    
-    #nvec = u_n.vector()
-    #minval = nvec.min()
-    #print("minval POST neg fix",minval)
-    #print("u_n vector POST neg fix: 69308830276194", nvec.get_local())
-    #plotting_sqrt(u_n, "POST NEG FIX")
-     
-        
-    #intn = float(assemble((u_n)*dx(mesh)))
-    #print("Number of electrons before correction:",intn)
-    #u_n.vector()[:] = u_n.vector()[:]*N/intn    
-    #intn = float(assemble((u_n)*dx(mesh)))            
-    #print("Number of electrons after correction:",intn)
-
     assign(u_k.sub(1),u_n)
     print('Check end of loop, iteration: ', iters)
 
 plotting_sqrt(nlast, " Final density") 
+
+#----- Calculate ion-ion energy
+field = Function(V)   
+ionion_energy = 0.0
+#----- Calculate ion-electron energy
+        
+field.vector()[:] = 0.0
+
+u = TrialFunction(V)
+v = TestFunction(V)
+a = u.dx(0)*v.dx(0)*dx - (2/r)*u.dx(0)*v*dx
+L = 4*math.pi*nlast*v*dx 
+A,b = assemble_system(a, L, bcs)
+# =============================================================================
+#     if Z != 0:
+#         print ("APPLYING DELTA",Z)
+#         # TODO: Should we have delta^3? How do we do that?...
+#         delta = PointSource(V, Point(fel.rs[0]),4.0*pi*Z)
+#         delta.apply(b)
+# =============================================================================
+
+solve(A, field.vector(), b)
+print ("= Finished")
+
+ionelec_energy = 4*math.pi*float(assemble(field*r*r*dx))
+
+#---- Calculate elec-elec energy
+          
+elecelec_energy = 0.5*float(assemble(field*r*r*dx))
+        
+#---- Calculate functional energy
+
+func_energy_expression = 1.0/8.0*nlast.dx(0)/nlast\
+                         + CF*pow(nlast,(5.0/3.0))\
+                         - CX*pow(nlast,(4.0/3.0))
+
+functional_energy = float(assemble(func_energy_expression*dx))
+print('check type of the functional energy', type(functional_energy))
+print('check type of the ionion energy', type(ionion_energy))
+print('check type of the ionelec energy', type(ionelec_energy))
+print('check type of the elecelec energy', type(elecelec_energy))
+total = ionion_energy + ionelec_energy + elecelec_energy + functional_energy
+
+#--- printing energies
+print ("==== Resulting energies (hartree to ev): ================")
+print ("Ion-ion:        % 10.4f"%(ionion_energy*27.21138386))
+print ("Ion-elec:       % 10.4f"%(ionelec_energy*27.21138386))
+print ("Elec-elec (Eh): % 10.4f"%(elecelec_energy*27.21138386))
+print ("Functional:     % 10.4f"%(functional_energy*27.21138386))
+print ("==============================================")
+print ("Total energy:   % 10.4f"%(total*27.21138386))
+print ("Total (Born-Oppenheimer approx):  % 10.4f"%((ionelec_energy + elecelec_energy + functional_energy)*27.21138386))
+print ("==============================================")
