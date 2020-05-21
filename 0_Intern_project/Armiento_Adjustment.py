@@ -465,6 +465,15 @@ while eps > minimal_error and iters < maxiter:
 
 plotting_sqrt(nlast, " Final density") 
 
+# =============================================================================
+# for i in len(range(nlast.vector()[radisu] nlast.vector()[-1] :
+#     nlast.vector()[i] = 0.0
+# =============================================================================
+
+# =============================================================================
+# slice(nlast.vector().get_local()[16],nlast.vector().get_local()[-1])
+# 
+# =============================================================================
 #----- Calculate ion-ion energy
 field = Function(V)   
 ionion_energy = 0.0
