@@ -206,7 +206,7 @@ def boundary_R(x, on_boundary):
     return on_boundary and near(x[0], end_x, tol)
 
 #Defining expression on left boundary
-n_L = Expression('-10', degree=1)         
+n_L = Expression('0', degree=1)         
 bc_L = DirichletBC(V, n_L, boundary_L)  
     
 #Defining expression on right boundary
@@ -237,20 +237,22 @@ u_n = interpolate(n_i, V)
 
 #######----- Initializing boundary conditions on Hartree potential ---###
 
-v_hi = interpolate(Constant(-1), V)
-v_h = Function(V)
-u = TrialFunction(V)
-v = TestFunction(V)
-a = -u.dx(0)*v.dx(0)*dx 
-     
-L = -8.0*sqrt(2.0)/(3.0*pi)*(sqrt(Constant(mu) - Ex - v_hi))**3*v*dx\
-    + (2/r)*v_hi.dx(0)*v*dx
-
-A,  b = assemble_system(a, L, bcs)
-
-solve(A, v_h.vector(), b)
-
-plotting_normal(v_h, "VH  - POST first solve")
+v_h = interpolate(Constant(-1), V)
+# =============================================================================
+# v_h = Function(V)
+# u = TrialFunction(V)
+# v = TestFunction(V)
+# a = -u.dx(0)*v.dx(0)*dx 
+#      
+# L = -8.0*sqrt(2.0)/(3.0*pi)*(sqrt(Constant(mu) - Ex - v_hi))**3*v*dx\
+#     + (2/r)*v_hi.dx(0)*v*dx
+# 
+# A,  b = assemble_system(a, L, bcs)
+# 
+# solve(A, v_h.vector(), b)
+# 
+# plotting_normal(v_h, "VH  - POST first solve")
+# =============================================================================
 
 # =============================================================================
 # Vvec = v_h.vector()
@@ -306,8 +308,8 @@ while eps > minimal_error and iters < maxiter:
     #---- Setting up functionals -------------------
     TF = (5.0/3.0)*CF*u_nk**(2.0/3.0)*pr
     DIRAC = (-4.0/3.0)*CX*pow(u_nk,(1.0/3.0))*pr
-    WEIZSACKER = (1.0/8.0*(dot(grad(u_nk),grad(u_nk))/(u_nk**2)*pr+(1.0/4.0*(dot(grad(u_nk),grad(pr)))/u_nk)))
-#    WEIZSACKER = (1.0/8.0*(u_nk.dx(0))*u_nk.dx(0)/(u_nk**2)*pr+(1.0/4.0*(u_nk.dx(0))*pr.dx(0))/u_nk)
+#    WEIZSACKER = (1.0/8.0*(dot(grad(u_nk),grad(u_nk))/(u_nk**2)*pr+(1.0/4.0*(dot(grad(u_nk),grad(pr)))/u_nk)))
+    WEIZSACKER = (1.0/8.0*(u_nk.dx(0))*u_nk.dx(0)/(u_nk**2)*pr+(1.0/4.0*(u_nk.dx(0))*pr.dx(0))/u_nk)
 
     funcpots = 0
     funcpots = TF \

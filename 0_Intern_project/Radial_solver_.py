@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
 ----------------------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------------
@@ -23,6 +25,9 @@ import pylab
 
 plt.close('all')
 
+# =============================================================================
+
+# =============================================================================
 """---------------------------------------------------------------------------"""
 #Element H
 #Z = 1   # Hydrogen
@@ -35,6 +40,10 @@ plt.close('all')
 #Element Kr
 Z = Constant(36) # Krypton
 N = Z 		  # Neutral 
+
+#Element 115
+#Z = Constant(115)
+#N = Z
 
 a_0 = 1 # Hatree units
 Alpha = (4/a_0)*(2*Z/(9*pi**2)**(1/3))
@@ -50,6 +59,17 @@ CX = 3.0/4.0*(3.0/math.pi)**(1.0/3.0)
 ----------------------------------------------------------------------------------------------
 -------------------------------------------------------------------------------------------"""
 
+def smoothzero(x, delta):
+    x[x < 10.0/delta] = 1.0/delta*np.log(1+np.exp(x[x<10.0/delta]*delta))
+
+def smoothstep(edge0, edge1, x):
+  x = clamp((x - edge0) / (edge1 - edge0), 0.0, 1.0) 
+  return x * x * (3 - 2 * x)
+
+def clamp(x, lowerlimit,  upperlimit):
+    return conditional(lt(x,lowerlimit),lowerlimit,conditional(gt(x,upperlimit),upperlimit,x))
+    
+
 def plotting_psi(u,title):
     a_0 = 1 # Hatree units
     Alpha_ = (4/a_0)*(2*Z/(9*pi**2)**(1/3))
@@ -62,12 +82,30 @@ def plotting_psi(u,title):
     #x = numpy.logspace(-5,2,100)
     y = [u(v)**(2/3)*v*(3*math.pi**2/(2*np.sqrt(2)))**(2/3)  for v in rplot]
     pylab.plot(x,y,'kx-')
-    pylab.title(title)
+    pylab.title(title, fontsize=22)
     pylab.pause(0.1)
-    pylab.xlabel("Alpha * R")
-    pylab.ylabel("Psi")
+    pylab.grid()
+    pylab.xlabel("Alpha * R", fontsize=18)
+    pylab.ylabel("Psi", fontsize=18)
 
     return     
+
+def plotting_log_keep(u,title):
+    rplot = mesh.coordinates()
+    x = rplot
+    #x = numpy.logspace(-5,2,100)
+    y = [u(v) for v in rplot]
+
+    pylab.semilogy(x,y,'rx-')
+    #pylab.plot(x,y,'kx-')
+    pylab.title(title, fontsize=22)
+    pylab.pause(0.01)
+#    pylab.waitforbuttonpress()
+    pylab.grid()
+    pylab.xlabel("r", fontsize=18)
+    pylab.ylabel("n[r]", fontsize=18)
+
+    return 
 
 def plotting_normal(u,title):
     pylab.clf()
@@ -77,12 +115,34 @@ def plotting_normal(u,title):
     #x = numpy.logspace(-5,2,100)
     y = [u(v) for v in rplot]
 
+    #pylab.semilogx(x,y,'bx-')
     pylab.plot(x,y,'kx-')
-    pylab.title(title)
-    pylab.pause(0.1)
-    pylab.grid
-    pylab.xlabel("r")
-    pylab.ylabel("n[r]")
+    pylab.title(title, fontsize=22)
+    pylab.pause(0.01)
+#    pylab.waitforbuttonpress()
+    pylab.grid()
+    pylab.xlabel("r", fontsize=18)
+    pylab.ylabel("n[r]", fontsize=18)
+
+    return 
+
+
+def plotting_log(u,title):
+    pylab.clf()
+    
+    rplot = mesh.coordinates()
+    x = rplot
+    #x = numpy.logspace(-5,2,100)
+    y = [u(v) for v in rplot]
+
+    pylab.semilogy(x,y,'bx-')
+    #pylab.plot(x,y,'kx-')
+    pylab.title(title, fontsize=22)
+    pylab.pause(0.01)
+#    pylab.waitforbuttonpress()
+    pylab.grid()
+    pylab.xlabel("r", fontsize=18)
+    pylab.ylabel("n[r]", fontsize=18)
 
     return 
 
@@ -95,10 +155,13 @@ def plotting_sqrt(u,title):
     y = [v*sqrt(u(v)) for v in rplot] 
     
     pylab.plot(x,y,'kx-')
-    pylab.title(title)
-    pylab.pause(2)
-    pylab.xlabel("SQRT(R)")
-    pylab.ylabel("R * SQRT(density")
+    pylab.title(title, fontsize=22)
+#    pylab.waitforbuttonpress()
+    pylab.pause(0.1)
+    pylab.grid()
+    pylab.xlabel(r"$\sqrt{R}$", fontsize=18)
+    pylab.ylabel(r"$R \sqrt{n(r)}$", fontsize=18)
+
     
     return 
      
@@ -109,30 +172,20 @@ def plotting_sqrt(u,title):
 -------------------------------------------------------------------------------------------""" 
 
 
-# Create mesh and define function space
-# =============================================================================
-# rs = np.arange(0.1,5.0,0.1)
-# rs = np.array((rs**2))
-# =============================================================================
-rs = np.arange(0.1,25.0,0.1)
-#rs = np.array((rs**2))
+rs = np.arange(0.1 , 25.0 , 0.01)
+radius = rs[-1]
+r_inner = 0.0
+rs_outer = [x for x in rs if x > r_inner]
 
 start_x = rs[0]
 end_x = rs[-1]
 amount_vertices = len(rs)
-
-# =============================================================================
-# start_x = 0.1
-# end_x = 25
-# amount_vertices = end_x*10
-# =============================================================================
-
 mesh = IntervalMesh(amount_vertices,start_x, end_x) # Splits up the interval [0,1] in (n) elements 
 
 #print("MES COORDS",np.shape(mesh.coordinates()))
 
 #Creation of Function Space
-P1 = FiniteElement("P", mesh.ufl_cell(), 2)
+P1 = FiniteElement('P', mesh.ufl_cell(), 2)
 element = MixedElement([P1,P1])
 
 V = FunctionSpace(mesh, 'P', 2) # P stands for lagrangian elemnts, number stands for degree
@@ -167,8 +220,8 @@ n_R = Expression('0', degree=1)
 bc_R = DirichletBC(V, n_R, boundary_R) 
     
 #collecting the left and right boundary in a list for the solver to read
-#bcs = [bc_L, bc_R]
-bcs = []
+bcs = [bc_L, bc_R]
+#bcs = []
 """-------------------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------------------- 
                     Defning external potential v[r] 
@@ -177,87 +230,45 @@ bcs = []
 ----------------------------------------------------------------------------------------------
 -------------------------------------------------------------------------------------------"""
 # External potential
-Ex = -Z/r
+Ex = (-Z/r)
+
+startomega = 0.8
+mu = 0.0
 
 #########------ Initial density ------##########
-n_i = Expression('a*exp(-b*pow(x[0], 2))', degree = 2, a = 1, b=0.05)
-#n_i = Expression('rho0*exp(-fac*Z*x[0])', degree=2, Z=Z,fac=1.8,rho0=5832)
-#n_i = Constant(1)
+#n_i = Expression('a*exp(-b*pow(x[0], 2))', degree = 2, a = 1, b=0.05)
+n_i = Constant(1)
 
 u_n = interpolate(n_i, V)
 
-##plotting_sqrt(u_n, "PRE first solve")
-
-u = TrialFunction(V)
-v = TestFunction(V)
-a = u.dx(0)*v.dx(0)*dx 
-L = u_n**(3/2)*v*dx
-#L = sqrt(u_n)*3*v*dx
-#L = u_n*v*dx
-
-A,  b = assemble_system(a, L, bcs)
-
-solve(A, u_n.vector(), b)
-
-##plotting_sqrt(u_n, "POST first solve")
-
-#------------Checking amount of electrons ----------------------
-
-intn = float(assemble((u_n)*dx(mesh)))
-print("[Initial density] Number of electrons before adjustment:", intn)
-u_n.vector()[:] = u_n.vector()[:]*N/intn  
-intn = float(assemble((u_n)*dx(mesh)))
-print("[Initial density] Number of electrons at start after adjustment:",intn)
-
-
-nvec = u_n.vector()
-minval = nvec.min()
-# =============================================================================
-# print("minval PRE neg fix:",minval)
-# print(" PRE nvec values", nvec.get_local())
-# plotting_sqrt(u_n,"PRE neg fix ")
-# =============================================================================
-# =============================================================================
-# #nvec[nvec<0.0]=0.0  #puts index -1 to 0 ?
-# print("nvec values", nvec.get_local())
-# 
-# nvec[nvec.get_local()[nvec<20]] = 0.0
-# nvec[nvec.get_local()[-2]] = 0.0
-# nvec[nvec.get_local()[-3]] = 0.0
-# nvec[nvec.get_local()[-4]] = 0.0
-# =============================================================================
-
-
-nvec[nvec<0.0] = 0.0   #puts index -1 to 0 ?
-#nvec[rs[0]] = 0.0
-
-
-nvec = u_n.vector()
-minval = nvec.min()
-# =============================================================================
-# print("minval POST neg fix",minval)
-# print("POST nvec values", nvec.get_local())
-# plotting_sqrt(u_n,"POST neg fix ")
-# =============================================================================
 #######----- Initializing boundary conditions on Hartree potential ---###
+
 v_h = interpolate(Constant(-1), V)
 # =============================================================================
-
-# 
+# v_h = Function(V)
 # u = TrialFunction(V)
 # v = TestFunction(V)
-# a = u.dx(0)*v.dx(0)*dx 
-# L = v_h*v*dx
-# #L = sqrt(n_i)*v*dx
-# #L = n_i*v*dx
-# A,  b = assemble_system(a, L, bcs)
+# a = -u.dx(0)*v.dx(0)*dx 
+#      
+# L = -8.0*sqrt(2.0)/(3.0*pi)*(sqrt(Constant(mu) - Ex - v_hi))**3*v*dx\
+#     + (2/r)*v_hi.dx(0)*v*dx
 # 
-# plotting_sqrt(v_h, "VH  - PRE first solve")
+# A,  b = assemble_system(a, L, bcs)
 # 
 # solve(A, v_h.vector(), b)
 # 
-# plotting_sqrt(v_h, "VH  - POST first solve")
+# plotting_normal(v_h, "VH  - POST first solve")
 # =============================================================================
+
+# =============================================================================
+# Vvec = v_h.vector()
+# for i in range(len(Vvec.get_local())):
+#     if Vvec[i] > 0.0:
+#         Vvec[i] = -1
+# =============================================================================
+
+plotting_normal(v_h, "VH  - initial")
+
 """-------------------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------------
                     Defining and solving the variational problem
@@ -274,72 +285,52 @@ du = Function(W)
 u_k = Function(W)
 assign(u_k.sub(0), v_h)
 assign(u_k.sub(1), u_n)
-#plotting_sqrt(u_k.sub(1), " U-k(1)")
+
+#plotting_normal(u_k.sub(0), "VH  - POST assigning")
+
 nlast = Function(V)
 
-# =============================================================================
-# #redefine boundary conditions for loop iteration
-# bc_L_du = DirichletBC(V, Constant(0), boundary_L)
-# bc_R_du = DirichletBC(V, Constant(0), boundary_R)
-# #bcs_du = [bc_L_du, bc_R_du]
-# =============================================================================
 
 bcs_du = []
-"""---------------------------------------------------------------------------"""
-## ------ Tweaking values -------
-#neg_correction = 0.1
-omega =  1
-mu = 1
 
+""
 eps = 1
 iters = 0
 maxiter = 1000
 minimal_error = 1E-10
+lamb_weizsacker = 1/1
 
-# =============================================================================
-# def vh_to_dens(vh,dens):
-#     bcs = []
-#     
-#     r = SpatialCoordinate(mesh)[0]
-#     u = TrialFunction(V)
-#     v = TestFunction(V)        
-#     a = u*v*dx
-#     # Works but with oscillations
-#     #L = (-1.0/(4.0*pi))*(2/r*vh.dx(0)*v-vh.dx(0)*v.dx(0))*dx
-#     L = (-1.0/(4.0*pi))*(2/r*vh.dx(0)*v-vh.dx(0)*v.dx(0))*dx
-# 
-#     #a = inner(vh,v)*dx
-#     #L = (-1.0/(4.0*pi))*inner(u.dx(0),v.dx(0))*dx+2/r*inner(u.dx(0),v)*dx
-#     solve(a == L, dens,bcs)
-# =============================================================================
-
+omega = startomega
 while eps > minimal_error and iters < maxiter:
     iters += 1 
     
     # Put the initial [density and v_h] in u_k
     (v_hk, u_nk) = split(u_k)
     
-#    plotting_sqrt(v_hk, "Hartree potential - beginning loop" )
-    plotting_sqrt(u_nk, "Density - beginning loop")   
-    print("Density - beginning loop", type(u_nk))
+    plotting_normal(v_hk, "Hartree potential" )
+#    plotting_log(u_nk, "In loop PRE solver")       
+#    plotting_sqrt(u_nk, " Begin loop. Pre solver" )
     
     #---- Setting up functionals -------------------
     TF = (5.0/3.0)*CF*u_nk**(2.0/3.0)*pr
     DIRAC = (-4.0/3.0)*CX*pow(u_nk,(1.0/3.0))*pr
     WEIZSACKER = (1.0/8.0*(dot(grad(u_nk),grad(u_nk))/(u_nk**2)*pr+(1.0/4.0*(dot(grad(u_nk),grad(pr)))/u_nk)))
+#    WEIZSACKER = (1.0/8.0*(u_nk.dx(0))*u_nk.dx(0)/(u_nk**2)*pr+(1.0/4.0*(u_nk.dx(0))*pr.dx(0))/u_nk)
+
     funcpots = 0
     funcpots = TF \
-		+ WEIZSACKER \
+		+ lamb_weizsacker * WEIZSACKER \
         + DIRAC 
       
 # =============================================================================
 #     # correct for possible negative mu
-#     u_i = project(Constant(mu) -Ex - u_nk,V)
-#     minval = u_i.vector().min()
+#     correction_mu = project(Constant(mu) -Ex - u_nk,V)
+#     minval = correction_mu.vector().min()
 #     if minval < 0.0:
-#         mu-=minval-1e-14
-#     u_i = project(Constant(mu) -Ex - u_nk,V)
-#     print("MINIMUM VALUE",u_i.vector().min())
+#         mu-=minval-1e-10
+#         print(" New MU: ", mu)
+#     correction_mu = project(Constant(mu) -Ex - u_nk,V)
+#     print("MINIMUM VALUE",correction_mu.vector().min())
 # =============================================================================
         
     
@@ -358,18 +349,11 @@ while eps > minimal_error and iters < maxiter:
     #Calculate Jacobian
     J = derivative(F, u_k, du_trial)
     
-#    plotting_sqrt(v_hk, "Hartree potential - After Jacobian calculation" )
-    plotting_sqrt(u_nk, "Density - After Jacobian calculation") 
-    print("Density - After Jacobian calculation", type(u_nk))
-    
     #Assemble system
     A, b = assemble_system(J, -F, bcs_du)
     
     solve(A, du.vector(), b)
     
-#    plotting_sqrt(du.sub(0), "D v_h - After Solver " )
-    plotting_sqrt(du.sub(1), "D u_n - After Solver ") 
-    print("D u_n - After Solver ",type(du.sub(1)))
     
     # Conserve memory by reusing vectors for v_h and u_n to keep dv_h and du_n
     dv_h = v_h                  #step to transfer type info to dv_h
@@ -380,34 +364,24 @@ while eps > minimal_error and iters < maxiter:
     assign(du_n, du.sub(1))     #step to transfer values to du_n
     u_n = None                  #empty u_n
     
-#    plotting_sqrt(dv_h, "D v_h - After 1st memory conservation " )
-    plotting_sqrt(du_n, "D u_n - After 1st memory conservation ") 
-    print("D u_n - After 1st memory conservation ", type(du_n))
-# =============================================================================
-#     dnvec = du_n.vector()
-#     dnvec[dnvec<0.0] = 0.0
-# =============================================================================
-#    plotting_sqrt(du_n,"du - post solver)") #For verifying with TFDW
 
-   
     #---- Calculate the Error -----------------------
-    avg = sum(du_n.vector())/len(du_n.vector())
-    eps = np.linalg.norm(du_n.vector()-avg, ord=np.Inf)
-    #if math.isnan(eps):
-      #  raise Exception("Residual error is NaN")
+    epsexpr = conditional(lt(r,radius),du_n**2,0.0)
+    eps = float(assemble((epsexpr)*dx(mesh)))    
+    if math.isnan(eps):
+        raise Exception("Residual error is NaN")
     print("EPS is:",eps)
-        
+    
+    # Once we actually converge, we should no longer dampen the newton iterations
+    if eps < 0.1:
+        omega = 1.0
+    
     #--- Assigning the last calculated density to nlast
     assign(nlast,u_k.sub(1))
-    
-    
+        
     #---- Taking the step for u_n and v_h ------------
     u_k.vector()[:] = u_k.vector()[:] + omega*du.vector()[:]
-    
-#    plotting_sqrt(u_k.sub(0), "Hartree potential - After u_k + omega*du step " )
-    plotting_sqrt(u_k.sub(1), "Density - After u_k + omega*du step ") 
-    print("Density - After u_k + omega*du step ", type(u_k.sub(1)))
-    
+        
     # Conserve memory by reusing vectors for u_n, v_h also as du_n, dv_h
     v_h = dv_h 
     assign(v_h, u_k.sub(0))
@@ -416,71 +390,213 @@ while eps > minimal_error and iters < maxiter:
     u_n = du_n 
     assign(u_n, u_k.sub(1))
     du_n = None
-    
-#    plotting_sqrt(v_h, "Hartree potential - After 2nd memory conservation " )
-    plotting_sqrt(u_n, "Density - After 2nd memory conservation ") 
-    print("Density - After 2nd memory conservation ", type(u_n))
-    
+#------------------------- electron correction    
+    elecint = conditional(gt(u_n,0.0),u_n *r*r , 1E-8)
+    # if u_n > 0.0 elecint == u_n*r^2 
+    # else          elecint == 0.0
+    intn =4*math.pi*float(assemble((elecint)*ds))
+    print("Electron count before correction:",intn)
+
+
+    if intn <= 1e-4:
+        print("Electron count too small")
+        u_n = interpolate(Constant(1.0), V)
+
 # =============================================================================
-# #    vh_to_dens(v_h,u_n)
-# #---- Ad hoc negative density fix -------
-# #    rvec = mesh.coordinates()
-# #    nvec = np.array([u_n(v) for v in rvec])
-#     nvec = u_n.vector()
-#     minval = nvec.min()
-#     neg_correction = 0.001
-#     
-#     print("minval PRE neg fix:",minval)
-# 
-#     if minval < 0.0:
-#         print("Going to add:", -1*minval+neg_correction)
-#         #nvec[:]=nvec[:]-minval+neg_correction
-#         u_n.vector()[:]= u_n.vector()[:]-minval+neg_correction
-#     
-#     nvec = u_n.vector()
-#     minval = nvec.min()
-#     print("minval POST neg fix",minval)
+#     elif intn != N:
+#         u_n.vector()[:] = u_n.vector()[:]*N/intn  
+#         elecint = conditional(gt(u_n,0.0),u_n*r*r,0.0) 
+#     else: 
+#         u_n.vector()[:] = u_n.vector()[:]
 # =============================================================================
+# =============================================================================
+#         
+#     intn = 4*math.pi*float(assemble((elecint)*dx))            
+#     print("Number of electrons after correction:",intn)    
+# =============================================================================
+#--------------------------neg dens fix    
     
-    
+    plotting_log(u_n, "PRE NEG FIX")
+#    plotting_sqrt(u_n, "pre neg fix")
+
     nvec = u_n.vector()
     minval = nvec.min()
+    print("minval PRE neg fix:",minval)    
     
-    #print("minval PRE neg fix:",minval)
-#    print(nvec<0.0)
-#    print("u_n vector PRE neg fix: ", nvec.get_local())
-#    plotting_sqrt(v_h, "Hartree potential - PRE neg fix " )
-    plotting_sqrt(u_n, "Density - PRE neg fix") 
-    print("Density - PRE neg fix", type(u_n))
-    
-#-- negative density fix         
-    for i in range(len(nvec.get_local())):
-        if nvec[i] < 0.001:
-            nvec[i] = 0.01
+    x = rs_outer
+    y = [u_n(rv) for rv in x]
+    radius = x[-1]
+    radval = 1e-12   # Why does radval not become the value of the tail?
+    for i in range(len(y)):
+        if y[i] <= 1e-10:
+            if i == 0:
+                radius = 0.0
+                pass
+            else:
+                radius = x[i]*3.0/4.0
+                radval = u_n(radius)
+                break
+
+    print("RADIUS:",radius)
+
+    if radius == 0.0:        
+        assign(u_n,interpolate(Constant(1), V))
+        
+    elif radius < x[-1]:
+        fitexpr = smoothstep(radius,radius+1.0,r)*radval + (1.0-smoothstep(radius,radius+1.0,r))*conditional(gt(u_n,radval),u_n,radval)
+        #conditional(gt(r,radius),1e-10,u_n)
+        fitfunc = project(fitexpr, V)
+        assign(u_n,fitfunc)
+
+    #params = np.polyfit(x, np.log(y), 1)
+    #fitexpr = Expression('exp(p1)*exp(p0*x[0])', degree=2, p1=params[1],p0=params[0])
+    #fitexpr2 = smoothstep(rs_ob_start,rs_ob_end,r)*fitexpr + (1.0-smoothstep(rs_ob_start,rs_ob_end,r))*u_n
+    #fitexpr3 = conditional(gt(fitexpr2,1e-14),fitexpr2,1e-14)
+    #fitfunc = project(fitexpr2, V)
+    #assign(u_n,fitfunc)
+
+# =============================================================================
+#     for i in range(len(nvec.get_local())):
+#         if nvec[i] < 1e-10:
+#             nvec[i] = 1e-10
+# =============================================================================
             
-#--plot after neg fix     
+    plotting_log_keep(u_n, "DENS POST NEG FIX")
+#    plotting_sqrt(u_n, " Density post neg fix" )
     nvec = u_n.vector()
     minval = nvec.min()
-#    print("minval POST neg fix",minval)
-#    print("u_n vector POST neg fix: ", nvec.get_local())
-#    plotting_sqrt(v_h, "Hartree potential - POST neg fix " )
-    plotting_sqrt(u_n, "Density - POST neg fix") 
-    print(type(u_n))
+    print("minval POST neg fix:",minval)    
     
-##---- correct for number of electrons        
-# =============================================================================
-#     intn = float(assemble((u_n)*dx(mesh)))
-#     print("Number of electrons before correction:",intn)
-#     u_n.vector()[:] = u_n.vector()[:]*N/intn    
-#     intn = float(assemble((u_n)*dx(mesh)))            
-#     print("Number of electrons after correction:",intn)
-# =============================================================================
+    #print("u_n vector PRE neg fix: ", nvec.get_local())
+
+    #fitexpr = conditional(gt(u_n,1e-10),u_n,1e-10)
+    #fitfunc = project(fitexpr, V)
+    #assign(u_n,fitfunc)
     
-##--- Assigning u_n to u_k    
-    assign(u_k.sub(1),u_n)
+#    conditional(lt(radius, rs[-1]),v_h(radius) == 0.0, v_h(-1) == 0.0)
+#    conditional(lt(radius, rs[-1]),v_h()[radius] == 0.0, v_h()[-1] == 0.0)
+#    v_h =  conditional(lt(v_h, rs[-2]), v_h, 0.0)
     
-#    plotting_sqrt(u_k.sub(0), "Hartree potential - End of loop " )
-    plotting_sqrt(u_k.sub(1), "Density - End of loop") 
-    print(type(u_k.sub(1)))    
+    offset = v_h(rs[-1])
+    new_v_h = v_h - offset
+    new_v_h_proj = project(new_v_h, V)
+    assign(v_h,new_v_h_proj)
+   
+    assign(u_k.sub(0),v_h)
+    assign(u_k.sub(1), u_n)
     print('Check end of loop, iteration: ', iters)
 
+plotting_sqrt(nlast, " Final density") 
+
+# =============================================================================
+# for i in len(range(nlast.vector()[radisu] nlast.vector()[-1] :
+#     nlast.vector()[i] = 0.0
+# =============================================================================
+
+# =============================================================================
+# slice(nlast.vector().get_local()[16],nlast.vector().get_local()[-1])
+# 
+# =============================================================================
+# =============================================================================
+# #----- Calculate ion-ion interaction energy
+# field = Function(V)   
+# ionion_energy = 0.0
+# 
+# #----- Calculate ion-electron  energy
+#         
+# field.vector()[:] = 0.0
+# 
+# u = TrialFunction(V)
+# v = TestFunction(V)
+# a = u.dx(0)*v.dx(0)*dx - (2/r)*u.dx(0)*v*dx
+# L = 4*math.pi*nlast*v*dx 
+# A,b = assemble_system(a, L, bcs)
+# # =============================================================================
+# #     if Z != 0:
+# #         print ("APPLYING DELTA",Z)
+# #         # TODO: Should we have delta^3? How do we do that?...
+# #         delta = PointSource(V, Point(fel.rs[0]),4.0*pi*Z)
+# #         delta.apply(b)
+# # =============================================================================
+# 
+# solve(A, field.vector(), b)
+# 
+# =============================================================================
+
+h_to_ev = 27.21138386
+
+#Born - Oppenheimer approximation.
+ionion_energy = 0.0
+
+ionelec_energy = 4*math.pi*float(assemble(nlast*r*r*dx))
+
+#---- Calculate electron-electron interaction energy
+          
+elecelec_energy = 0.5*float(assemble(nlast*r*r*dx))
+        
+#---- Calculate functional energy
+
+func_energy_expression = 1.0/8.0*nlast.dx(0)/nlast\
+                         + CF*pow(nlast,(5.0/3.0))\
+                         - CX*pow(nlast,(4.0/3.0))
+
+functional_energy = float(assemble(func_energy_expression*dx))
+print('check type of the functional energy', type(functional_energy))
+print('check type of the ionion energy', type(ionion_energy))
+print('check type of the ionelec energy', type(ionelec_energy))
+print('check type of the elecelec energy', type(elecelec_energy))
+total = ionion_energy + ionelec_energy + elecelec_energy + functional_energy
+
+#--- printing energies
+print ("==== Resulting energies (hartree to ev): ================")
+print ("Ion-ion:        % 10.4f"%(ionion_energy*h_to_ev))
+print ("Ion-elec:       % 10.4f"%(ionelec_energy*h_to_ev))
+print ("Elec-elec (Eh): % 10.4f"%(elecelec_energy*h_to_ev))
+print ("Functional:     % 10.4f"%(functional_energy*h_to_ev))
+print ("==============================================")
+print ("Total energy:   % 10.4f"%(total*27.21138386))
+print ("Total (Born-Oppenheimer approx):  % 10.4f"%((ionelec_energy + elecelec_energy + functional_energy)*27.21138386))
+print ("==============================================")
+
+#Error bar on energies
+field2 = conditional(lt(r,radius),field,0.0)
+
+ionelec_energy = 4*math.pi*float(assemble(field2*r*r*dx))
+
+#---- Calculate electron-electron interaction energy
+          
+elecelec_energy = 0.5*float(assemble(field2*r*r*dx))
+        
+#---- Calculate functional energy
+
+func_energy_expression = 1.0/8.0*nlast.dx(0)/nlast\
+                         + CF*pow(nlast,(5.0/3.0))\
+                         - CX*pow(nlast,(4.0/3.0))
+
+functional_energy = float(assemble(func_energy_expression*dx))
+print('check type of the functional energy', type(functional_energy))
+print('check type of the ionion energy', type(ionion_energy))
+print('check type of the ionelec energy', type(ionelec_energy))
+print('check type of the elecelec energy', type(elecelec_energy))
+total = ionion_energy + ionelec_energy + elecelec_energy + functional_energy
+
+
+print ("==============================================")
+print ("Total energy:   % 10.4f"%(total*27.21138386))
+print ("Total (Born-Oppenheimer approx):  % 10.4f"%((ionelec_energy + elecelec_energy + functional_energy)*27.21138386))
+print ("==============================================")
+
+
+# =============================================================================
+# mesh = UnitCubeMesh(2, 2, 2)
+# plt.figure()
+# # from matplotlib import rc
+# # rc('font', **{'family': 'serif', 'serif':['baskerville']})
+# # rc('text',usetex=True)
+# font = { 'family': 'serif',
+#         'serif':'baskerville',
+#         'size' : 22}
+# plt.rc('font', **font)
+# plot(mesh, title="Unit cube using FEniCS")
+# 
+# =============================================================================
