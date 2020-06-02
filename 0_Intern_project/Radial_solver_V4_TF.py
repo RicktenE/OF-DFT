@@ -176,7 +176,7 @@ def plotting_sqrt(u,title, wait= False):
 
 
 #rs = np.arange(0.1, 25.0, 0.01)
-rs = np.arange(0.01, 6.0/Alpha,0.01)
+rs = np.arange(0.01, 3.0/Alpha,0.01)
 radius = rs[-1]
 r_inner = 0.0
 rs_outer = [x for x in rs if x > r_inner]
@@ -241,7 +241,7 @@ Ex = -Z/r
 
 ## ---  Initial density 
 n_i = Expression('exp(1.0-8.5*x[0]/radius)', degree=2, radius=rs[-1])
-
+#n_i = Constant(1)
 u_n = interpolate(n_i, V)
 
 ## --- Initial Hartree potential 
@@ -294,8 +294,8 @@ while eps > minimal_error and iters < maxiter:
     #---- Setting up functionals -------------------
     TF = (5.0/3.0)*CF*pow(u_nk**2,1.0/3.0)*pr
     DIRAC = (-4.0/3.0)*CX*pow(u_nk,(1.0/3.0))*pr
-    WEIZSACKER = (1.0/8.0*(dot(grad(u_nk),grad(u_nk))/(u_nk**2)*pr+(1.0/4.0*(dot(grad(u_nk),grad(pr)))/u_nk)))
-    #WEIZSACKER = (1.0/8.0*(u_nk.dx(0))*u_nk.dx(0)/(u_nk**2)*pr+(1.0/4.0*(u_nk.dx(0))*pr.dx(0))/u_nk)
+    #WEIZSACKER = (1.0/8.0*(dot(grad(u_nk),grad(u_nk))/(u_nk**2)*pr+(1.0/4.0*(dot(grad(u_nk),grad(pr)))/u_nk)))
+    WEIZSACKER = (1.0/8.0*(u_nk.dx(0))*u_nk.dx(0)/(u_nk**2)*pr+(1.0/4.0*(u_nk.dx(0))*pr.dx(0))/u_nk)
     
     #funcpots = TF + WEIZSACKER + DIRAC
     #funcpots = TF + DIRAC
@@ -305,9 +305,9 @@ while eps > minimal_error and iters < maxiter:
     
     #---- Solving v_h and u_n ----------------------
     # rotational transformation of nabla^2 v_h = -4 pi n(r)
-    F = - v_hk.dx(0)*qr.dx(0)*dx    \
-    + 4*math.pi*u_nk*qr*dx          \
-    + (2/r)*v_hk.dx(0)*qr*dx - v_hk.dx(0)*qr*ds(1) + v_hk.dx(0)*qr*ds(2)
+    F = - r*v_hk.dx(0)*qr.dx(0)*dx    \
+    + 4*math.pi*u_nk*r*qr*dx          \
+    + (2)*v_hk.dx(0)*qr*dx - v_hk.dx(0)*qr*ds(1) + v_hk.dx(0)*qr*ds(2)
          
     # Second coupled equation: Ts[n] + Exc[n] + Vext(r) - mu = 0
     F = F + funcpots*dx \
@@ -367,38 +367,41 @@ while eps > minimal_error and iters < maxiter:
     du_n = None
     
 
-# =============================================================================
-#     nvec = u_n.vector()
-#     vhvec = v_h.vector()
-#     minval = nvec.min()
-#     print("minval PRE neg fix:",minval)    
-#     plotting_log(u_n, "Density PRE correction", wait=True)
-#     
-#     x = rs_outer
-#     y = [u_n(rv) for rv in x]
-#     radius = x[-1]
-#     radval = 1e-12   
-#     for i in range(len(y)):
-#         if y[i] <= 1e-10:
-#             if i == 0:
-#                 radius = 0.0
-#                 pass
-#             else:
-#                 radius = x[i]*3.0/4.0
-#                 radval = u_n(radius)
-#                 break
-# 
-#     print("RADIUS:",radius)
-# 
-#     if radius == 0.0:        
-#         assign(u_n,interpolate(Constant(1), V))
-#         
-#     elif radius < x[-1]:
-#         fitexpr = smoothstep(radius,radius+1.0,r)*radval + (1.0-smoothstep(radius,radius+1.0,r))*conditional(gt(u_n,radval),u_n,radval)
-#         conditional(gt(r,radius),1e-10,u_n)
-#         fitfunc = project(fitexpr, V)
-#         assign(u_n,fitfunc)
-# =============================================================================
+    nvec = u_n.vector()
+    vhvec = v_h.vector()
+    minval = nvec.min()
+    print("minval PRE neg fix:",minval)    
+    plotting_log(u_n, "Density PRE correction", wait=False)
+   
+    tail = False
+    if tail == True:
+        
+        x = rs_outer
+        y = [u_n(rv) for rv in x]
+        radius = x[-1]
+        radval = 1e-12   
+        for i in range(len(y)):
+            if y[i] <= 1e-10:
+                if i == 0:
+                    radius = 0.0
+                    pass
+                else:
+                    radius = x[i]*3.0/4.0
+                    radval = u_n(radius)
+                    break
+
+        print("RADIUS:",radius)
+
+        if radius == 0.0:        
+            assign(u_n,interpolate(Constant(1), V))
+            
+        elif radius < x[-1]:
+            fitexpr = smoothstep(radius,radius+1.0,r)*radval + (1.0-smoothstep(radius,radius+1.0,r))*conditional(gt(u_n,radval),u_n,radval)
+            conditional(gt(r,radius),1e-10,u_n)
+            fitfunc = project(fitexpr, V)
+            assign(u_n,fitfunc)
+    
+    plotting_log_keep(u_n, "Density POST correction",wait=False)
     
     elecint = conditional(gt(u_n,0.0),u_n * r * r,0.0)
     intn1 = 4.0*pi*float(assemble((elecint)*dx(mesh)))
@@ -416,7 +419,7 @@ while eps > minimal_error and iters < maxiter:
     plotting_psi(u_n,"Density PSI",wait=False)    
 #    plotting_psi_keep(v_h,"Hartree potential PSI", wait=False)    
 
-#    plotting_sqrt(u_n, "Density Post solver", wait= True)
+#    plotting_sqrt(u_n, "Density Post solver", wait= False)
 #    plotting_sqrt(v_h, "Hartree potential Post solver", wait= False)
 
 #    plotting_normal(u_n, "Density Post solver", wait=False)
