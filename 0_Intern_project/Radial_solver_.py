@@ -30,16 +30,16 @@ plt.close('all')
 # =============================================================================
 """---------------------------------------------------------------------------"""
 #Element H
-Z = 1   # Hydrogen
-N = Z 		  # Neutral
+#Z = 1   # Hydrogen
+#N = Z 		  # Neutral
 
 #Element Ne
 #Z = Constant(10) # Neon
 #N = Z 		  # Neutral
 
 #Element Kr
-#Z = Constant(36) # Krypton
-#N = Z 		  # Neutral 
+Z = 36 # Krypton
+N = Z 		  # Neutral 
 
 #Element 115
 #Z = Constant(115)
@@ -174,7 +174,7 @@ def plotting_sqrt(u,title):
 -------------------------------------------------------------------------------------------""" 
 
 
-rs = np.arange(0.01 , 5 , 0.01)
+rs = np.arange(0.01 , 25 , 0.01)
 radius = rs[-1]
 r_inner = 0.0
 rs_outer = [x for x in rs if x > r_inner]
@@ -320,13 +320,13 @@ while eps > minimal_error and iters < maxiter:
     #---- Setting up functionals -------------------
     TF = (5.0/3.0)*CF*u_nk**(2.0/3.0)*pr
     DIRAC = (-4.0/3.0)*CX*pow(u_nk,(1.0/3.0))*pr
-    WEIZSACKER = (1.0/8.0*(dot(grad(u_nk),grad(u_nk))/(u_nk**2)*pr+(1.0/4.0*(dot(grad(u_nk),grad(pr)))/u_nk)))
-#    WEIZSACKER = (1.0/8.0*(u_nk.dx(0))*u_nk.dx(0)/(u_nk**2)*pr+(1.0/4.0*(u_nk.dx(0))*pr.dx(0))/u_nk)
+#    WEIZSACKER = (1.0/8.0*(dot(grad(u_nk),grad(u_nk))/(u_nk**2)*pr+(1.0/4.0*(dot(grad(u_nk),grad(pr)))/u_nk)))
+    WEIZSACKER = (1.0/8.0*(u_nk.dx(0))*u_nk.dx(0)/(u_nk**2)*pr+(1.0/4.0*(u_nk.dx(0))*pr.dx(0))/u_nk)
 
     funcpots = 0
     funcpots = TF \
-		#+ lamb_weizsacker * WEIZSACKER \
-        #+ DIRAC 
+		+ lamb_weizsacker * WEIZSACKER \
+        + DIRAC 
         
     
     #---- Solving v_h and u_n ----------------------
@@ -346,7 +346,7 @@ while eps > minimal_error and iters < maxiter:
     
     #Assemble system
 #    A, b = assemble_system(J, -F, bcs_du)
-    A, b = assemble_system(J, -F, bcs)
+    A, b = assemble_system(J, -F, bcs_du)
     
     solve(A, du.vector(), b)
     
@@ -542,8 +542,8 @@ while eps > minimal_error and iters < maxiter:
 
 
 
-#plotting_sqrt(nlast, " Final density") 
-plotting_psi(nlast, " Final density PSI")
+plotting_sqrt(nlast, " Final density") 
+#plotting_psi(nlast, " Final density PSI")
 
 h_to_ev = 27.21138386
 

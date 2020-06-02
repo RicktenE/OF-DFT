@@ -156,11 +156,13 @@ while eps > 1e-11 and iter < maxiter:
     u_k.assign(u)
 #    plotting_normal(u_k, 'Du')
     
-    elecint = conditional(gt(u_k,0.0),u_k  , 1E-8)
-    # if u_n > 0.0 elecint == u_n*r^2 
-    # else          elecint == 0.0
-    intn = 4*math.pi*float(assemble((elecint)*dx))
-    print("Electron maximum:",intn)
+# =============================================================================
+#     elecint = conditional(gt(u_k,0.0),u_k*r*r , 1E-8)
+#     # if u_n > 0.0 elecint == u_n*r^2 
+#     # else          elecint == 0.0
+#     intn = 4*math.pi*float(assemble((elecint)*dx))
+#     print("Electron maximum:",intn)
+# =============================================================================
      
 gr = project(u_k.dx(0),V)
 nr = project(Z/(4.0*pi)*gr.dx(0)/r,V)
