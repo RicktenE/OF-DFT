@@ -373,7 +373,33 @@ while eps > minimal_error and iters < maxiter:
     vhvec = v_h.vector()
     minval = nvec.min()
     print("minval PRE neg fix:",minval)    
+    plotting_log(u_n, "Density PRE correction", wait=True)
+    
+    x = rs_outer
+    y = [u_n(rv) for rv in x]
+    radius = x[-1]
+    radval = 1e-12   
+    for i in range(len(y)):
+        if y[i] <= 1e-10:
+            if i == 0:
+                radius = 0.0
+                pass
+            else:
+                radius = x[i]*3.0/4.0
+                radval = u_n(radius)
+                break
 
+    print("RADIUS:",radius)
+
+    if radius == 0.0:        
+        assign(u_n,interpolate(Constant(1), V))
+        
+    elif radius < x[-1]:
+        fitexpr = smoothstep(radius,radius+1.0,r)*radval + (1.0-smoothstep(radius,radius+1.0,r))*conditional(gt(u_n,radval),u_n,radval)
+        conditional(gt(r,radius),1e-10,u_n)
+        fitfunc = project(fitexpr, V)
+        assign(u_n,fitfunc)
+    
     elecint = conditional(gt(u_n,0.0),u_n * r * r,0.0)
     intn1 = 4.0*pi*float(assemble((elecint)*dx(mesh)))
     print("Electron count max:",intn1)
@@ -396,8 +422,10 @@ while eps > minimal_error and iters < maxiter:
 #    plotting_normal(u_n, "Density Post solver", wait=False)
 #    plotting_normal(v_h, " Hartree potential Post solver", wait=False)
         
-    plotting_log(u_n, "Density Post solver", wait=True)
-    plotting_log_keep(v_h, "Hartree Potential post solver", wait=True)    
+
+    plotting_log(v_h, "Density POST correction",wait=True)
+#    plotting_log(u_n, "Density Post solver", wait=True)
+#    plotting_log_keep(v_h, "Hartree Potential post solver", wait=True)    
     
     assign(u_k.sub(1),u_n) 
     assign(u_k.sub(0),v_h)

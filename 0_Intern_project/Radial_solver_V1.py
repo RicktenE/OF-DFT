@@ -542,8 +542,8 @@ while eps > minimal_error and iters < maxiter:
 
 
 
-plotting_sqrt(nlast, " Final density") 
-#plotting_psi(nlast, " Final density PSI")
+#plotting_sqrt(nlast, " Final density") 
+plotting_psi(nlast, " Final density PSI")
 
 h_to_ev = 27.21138386
 
