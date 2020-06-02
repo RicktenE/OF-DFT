@@ -25,16 +25,16 @@ plt.close('all')
 
 """---------------------------------------------------------------------------"""
 #Element H
-Z = 1   # Hydrogen
-N = Z 		  # Neutral
+#Z = 1   # Hydrogen
+#N = Z 		  # Neutral
 
 #Element Ne
 #Z = Constant(10) # Neon
 #N = Z 		  # Neutral
 
 #Element Kr
-#Z = Constant(36) # Krypton
-#N = Z 		  # Neutral 
+Z = Constant(36) # Krypton
+N = Z 		  # Neutral 
 
 a_0 = 1 # Hatree units
 Alpha = (4/a_0)*(2*Z/(9*pi**2))**(1/3)
@@ -243,12 +243,12 @@ ds = Measure("ds", subdomain_data=boundaries)
 # External potential
 Ex = -Z/r
 
-#########------ Initial density ------##########
+## ---  Initial density 
 n_i = Expression('exp(1.0-8.5*x[0]/radius)', degree=2, radius=rs[-1])
 
 u_n = interpolate(n_i, V)
 
-#########------ Initial Hartree potential ------##########
+## --- Initial Hartree potential 
 v_h = interpolate(Expression('Z/x[0]',Z=Z,degree=2), V)
 
 
@@ -298,8 +298,8 @@ while eps > minimal_error and iters < maxiter:
     #---- Setting up functionals -------------------
     TF = (5.0/3.0)*CF*pow(u_nk**2,1.0/3.0)*pr
     DIRAC = (-4.0/3.0)*CX*pow(u_nk,(1.0/3.0))*pr
-    #WEIZSACKER = (1.0/8.0*(dot(grad(u_nk),grad(u_nk))/(u_nk**2)*pr+(1.0/4.0*(dot(grad(u_nk),grad(pr)))/u_nk)))
-    WEIZSACKER = (1.0/8.0*(u_nk.dx(0))*u_nk.dx(0)/(u_nk**2)*pr+(1.0/4.0*(u_nk.dx(0))*pr.dx(0))/u_nk)
+    WEIZSACKER = (1.0/8.0*(dot(grad(u_nk),grad(u_nk))/(u_nk**2)*pr+(1.0/4.0*(dot(grad(u_nk),grad(pr)))/u_nk)))
+    #WEIZSACKER = (1.0/8.0*(u_nk.dx(0))*u_nk.dx(0)/(u_nk**2)*pr+(1.0/4.0*(u_nk.dx(0))*pr.dx(0))/u_nk)
     
     #funcpots = TF + WEIZSACKER + DIRAC
     #funcpots = TF + DIRAC
@@ -323,7 +323,8 @@ while eps > minimal_error and iters < maxiter:
     J = derivative(F, u_k, du_trial)
     
     #Assemble system
-    bc_R_du = DirichletBC(W.sub(1), Constant(0.), boundary_R)
+    bc_R_du = DirichletBC(W.sub(1), (0), boundary_R)
+   #bc_R_du = DirichletBC(W.sub(0), (Z/r), boundary_R)
     bcs_du = [bc_R_du]
     A, b = assemble_system(J, -F, bcs_du)
     
@@ -388,11 +389,14 @@ while eps > minimal_error and iters < maxiter:
         print("Electron count too small")
         u_n = interpolate(Constant(1.0), V)
 
-    plotting_psi(u_n,"Density PSI",wait=False)    
+#    plotting_psi(u_n,"Density PSI",wait=False)    
 #    plotting_psi_keep(v_h,"Hartree potential PSI", wait=False)    
 
-#    plotting_sqrt(u_n, "Density Post solver", wait= False)
+    plotting_sqrt(u_n, "Density Post solver", wait= False)
 #    plotting_sqrt(v_h, "Hartree potential Post solver", wait= False)
+
+#    plotting_normal(u_n, "Density Post solver", wait=False)
+#    plotting_normal(v_h, " Hartree potential Post solver", wait=False)
         
     
     
