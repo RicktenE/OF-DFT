@@ -175,7 +175,7 @@ def plotting_sqrt(u,title, wait= False):
 -------------------------------------------------------------------------------------------""" 
 
 
-rs = np.arange(0.1, 25.0, 0.01)
+rs = np.arange(1e-5, 25.0, 0.01)
 #rs = np.arange(0.01, 3.0/Alpha,0.01)
 radius = rs[-1]
 r_inner = 0.0
@@ -307,7 +307,7 @@ while eps > minimal_error and iters < maxiter:
     # rotational transformation of nabla^2 v_h = -4 pi n(r)
     F = - r*v_hk.dx(0)*qr.dx(0)*dx    \
     + 4*math.pi*u_nk*r*qr*dx          \
-    + (2)*v_hk.dx(0)*qr*dx - v_hk.dx(0)*qr*ds(1) + v_hk.dx(0)*qr*ds(2)
+    + (2)*v_hk.dx(0)*qr*dx - r*v_hk.dx(0)*qr*ds(1) + r*v_hk.dx(0)*qr*ds(2)
          
     # Second coupled equation: Ts[n] + Exc[n] + Vext(r) - mu = 0
     F = F + funcpots*dx \
@@ -371,9 +371,9 @@ while eps > minimal_error and iters < maxiter:
     vhvec = v_h.vector()
     minval = nvec.min()
     print("minval PRE neg fix:",minval)    
-    plotting_log(u_n, "Density PRE correction", wait=False)
+#    plotting_log(u_n, "Density PRE correction", wait=False)
    
-    tail = True
+    tail = False
     if tail == True:
         
         x = rs_outer
@@ -401,7 +401,7 @@ while eps > minimal_error and iters < maxiter:
             fitfunc = project(fitexpr, V)
             assign(u_n,fitfunc)
     
-    plotting_log_keep(u_n, "Density POST correction",wait=False)
+#    plotting_log_keep(u_n, "Density POST correction",wait=False)
     
     elecint = conditional(gt(u_n,0.0),u_n * r * r,0.0)
     intn1 = 4.0*pi*float(assemble((elecint)*dx(mesh)))

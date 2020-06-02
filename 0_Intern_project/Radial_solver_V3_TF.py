@@ -179,8 +179,8 @@ def plotting_sqrt(u,title, wait= False):
 -------------------------------------------------------------------------------------------""" 
 
 
-#rs = np.arange(0.1,25.0,0.01)
-rs = np.arange(0.01,3.0/Alpha,0.01)
+#rs = np.arange(1e-3,100.0,0.01)
+rs = np.arange(1e-3, 3.0/Alpha, 0.01)
 radius = rs[-1]
 r_inner = 0.0
 rs_outer = [x for x in rs if x > r_inner]
@@ -312,7 +312,7 @@ while eps > minimal_error and iters < maxiter:
     F = - v_hk.dx(0)*qr.dx(0)*dx    \
     + 4*math.pi*u_nk*qr*dx          \
     + (2/r)*v_hk.dx(0)*qr*dx - v_hk.dx(0)*qr*ds(1) + v_hk.dx(0)*qr*ds(2)
-         
+          
     # Second coupled equation: Ts[n] + Exc[n] + Vext(r) - mu = 0
     F = F + funcpots*dx \
     + v_hk*pr*dx        \
@@ -394,7 +394,7 @@ while eps > minimal_error and iters < maxiter:
 #    plotting_sqrt(u_n, "Density Post solver", wait= False)
 #    plotting_sqrt(v_h, "Hartree potential Post solver", wait= False)
         
-    
+#    plotting_log(u_n, "Density Post solver", wait=False)
     
     assign(u_k.sub(1),u_n) 
     assign(u_k.sub(0),v_h)
