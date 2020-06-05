@@ -64,37 +64,54 @@ def clamp(x, lowerlimit,  upperlimit):
 def plotting_psi(u,title,wait=False):
     pylab.clf()
     rplot = mesh.coordinates()
-    x = rplot*Alpha
-    y = [u(v)**(2/3)*v*(3*math.pi**2/(2*np.sqrt(2)))**(2/3)  for v in rplot]
-    pylab.plot(x,y,'rx-')
-    pylab.title(title)
+    x = rplot
+    y = [u(v) for v in rplot]
+    pylab.plot(x,y,'r-')
+    pylab.title(title, fontsize=20)
+    pylab.xlim(0, 8)
+    pylab.ylim(0, 1.1)
     pylab.grid()
     pylab.pause(0.1)
-    pylab.xlabel(r"$\alpha r$", fontsize=18)
-    pylab.ylabel(r"$\Psi$", fontsize=18)
+    pylab.xlabel(r"$X$", fontsize=18)
+    pylab.ylabel(r"$\Psi(X)$", fontsize=18)
     if wait:
         pylab.waitforbuttonpress()
     
     return     
 
-
 def plotting_psi_keep(u,title,wait=False):
+#    pylab.clf()
+    rplot = mesh.coordinates()
+    x = rplot
+    y = [u(v) for v in rplot]
+    pylab.plot(x,y,'r-')
+    pylab.title(title, fontsize=20)
+    pylab.xlim(0, 8)
+    pylab.ylim(0, 1.1)
+    pylab.grid()
+    pylab.pause(0.1)
+    pylab.xlabel(r"$X$", fontsize=18)
+    pylab.ylabel(r"$\Psi(X)$", fontsize=18)
+    pylab.grid()
+    if wait:
+        pylab.waitforbuttonpress()
+
+def plotting_psi_vh(u,title,wait=False):
     #pylab.clf()
     rplot = mesh.coordinates()
     x = rplot*Alpha
     
     y = [1.0-u(v)*v/Z+0.0 for v in rplot]
     pylab.plot(x,y,'go-')
-    pylab.title(title)
+    pylab.title(title, fontsize=20)
     pylab.grid()
     pylab.pause(0.1)
-    pylab.xlabel(r"$\alpha r$", fontsize=18)
+    pylab.xlabel(r"$X$", fontsize=18)
     pylab.ylabel(r"$\Psi$", fontsize=18)
     if wait:
         pylab.waitforbuttonpress()
     
     return     
-
 
 def plotting_log_keep(u,title, wait= False):
     rplot = mesh.coordinates()
@@ -103,7 +120,7 @@ def plotting_log_keep(u,title, wait= False):
 
     pylab.semilogy(x,y,'rx-')
 
-    pylab.title(title)
+    pylab.title(title, fontsize=20)
     pylab.pause(0.1)
     if wait:
         pylab.waitforbuttonpress()
@@ -122,7 +139,7 @@ def plotting_normal(u,title, wait= False):
 
 
     pylab.plot(x,y,'kx-')
-    pylab.title(title)
+    pylab.title(title, fontsize=20)
     pylab.pause(0.1)
     if wait:
         pylab.waitforbuttonpress()
@@ -141,7 +158,7 @@ def plotting_log(u,title, wait= False):
 
     pylab.semilogy(x,y,'bx-')
     #pylab.plot(x,y,'kx-')
-    pylab.title(title)
+    pylab.title(title, fontsize=20)
     pylab.pause(0.1)
     if wait:
         pylab.waitforbuttonpress()
@@ -156,9 +173,11 @@ def plotting_sqrt(u,title, wait= False):
     rplot = mesh.coordinates()
     x = np.sqrt(rplot)
     y = [v*sqrt(u(v)) for v in rplot] 
+#    pylab.xlim(0, 3)
+#    pylab.ylim(0, 2.1)
     
     pylab.plot(x,y,'kx-')
-    pylab.title(title)
+    pylab.title(title, fontsize=20)
     if wait:
         pylab.waitforbuttonpress()
     pylab.pause(0.1)
@@ -174,17 +193,12 @@ def plotting_sqrt(u,title, wait= False):
 ----------------------------------------------------------------------------------------------
 -------------------------------------------------------------------------------------------""" 
 
-
-rs = np.arange(1e-5, 25.0, 0.01)
-#rs = np.arange(0.01, 3.0/Alpha,0.01)
+rs = np.arange(1e-3, 100.0, 1e-2)
 radius = rs[-1]
 r_inner = 0.0
 rs_outer = [x for x in rs if x > r_inner]
 
-start_x = rs[0]
-end_x = rs[-1]
-amount_vertices = len(rs)
-mesh = IntervalMesh(amount_vertices,start_x, end_x) 
+mesh = IntervalMesh(len(rs),rs[0], rs[-1]) 
 
 #Creation of Function Space
 P1 = FiniteElement('P', mesh.ufl_cell(), 2)
@@ -207,19 +221,19 @@ tol = 1E-14
 
 #Defining the left boundary
 def boundary_L(x, on_boundary):
-    return on_boundary and near(x[0], start_x, tol)
+    return on_boundary and near(x[0], rs[0], tol)
 
 #Defining the right boundary
 def boundary_R(x, on_boundary):
-    return on_boundary and near(x[0], end_x, tol)
+    return on_boundary and near(x[0], rs[-1], tol)
 
 class LeftBoundary(SubDomain):
     def inside(self,x,on_boundary):
-        return on_boundary and near(x[0], start_x, tol)
+        return on_boundary and near(x[0], rs[0], tol)
 
 class RightBoundary(SubDomain):
     def inside(self,x,on_boundary):
-        return on_boundary and near(x[0], end_x, tol)    
+        return on_boundary and near(x[0], rs[-1], tol)    
 
 boundaries = MeshFunction("size_t", mesh, mesh.topology().dim()-1, 0)
 left_boundary = LeftBoundary()
@@ -240,7 +254,9 @@ ds = Measure("ds", subdomain_data=boundaries)
 Ex = -Z/r
 
 ## ---  Initial density 
-n_i = Expression('exp(1.0-8.5*x[0]/radius)', degree=2, radius=rs[-1])
+#n_i = Expression('exp(1.0-8.5*x[0]/radius)', degree=2, radius=rs[-1])
+n_i = Expression('exp(1.0-15*x[0]/radius)', degree=2, radius=rs[-1])
+
 #n_i = Constant(1)
 u_n = interpolate(n_i, V)
 
@@ -305,10 +321,17 @@ while eps > minimal_error and iters < maxiter:
     
     #---- Solving v_h and u_n ----------------------
     # rotational transformation of nabla^2 v_h = -4 pi n(r)
-    F = - r*v_hk.dx(0)*qr.dx(0)*dx    \
-    + 4*math.pi*u_nk*r*qr*dx          \
-    + (2)*v_hk.dx(0)*qr*dx - r*v_hk.dx(0)*qr*ds(1) + r*v_hk.dx(0)*qr*ds(2)
-         
+    rtrick = True
+    if rtrick ==True:
+        F = - r*v_hk.dx(0)*qr.dx(0)*dx    \
+            + r*r*4*math.pi*u_nk*qr*dx          \
+            + (2)*v_hk.dx(0)*qr*dx - r*v_hk.dx(0)*qr*ds(1) + r*v_hk.dx(0)*qr*ds(2)
+
+    else:
+        F = - v_hk.dx(0)*qr.dx(0)*dx    \
+        + 4*math.pi*u_nk*qr*dx          \
+        + (2/r)*v_hk.dx(0)*qr*dx - v_hk.dx(0)*qr*ds(1) + v_hk.dx(0)*qr*ds(2)
+             
     # Second coupled equation: Ts[n] + Exc[n] + Vext(r) - mu = 0
     F = F + funcpots*dx \
     + v_hk*pr*dx        \
@@ -319,15 +342,14 @@ while eps > minimal_error and iters < maxiter:
     J = derivative(F, u_k, du_trial)
     
     #Assemble system
-    bc_R_du = DirichletBC(W.sub(1), (0), boundary_R)
-   #bc_R_du = DirichletBC(W.sub(0), (Z/r), boundary_R)
-    bcs_du = [bc_R_du]
+    bc_nR_du = DirichletBC(W.sub(1), (0), boundary_R)
+#    bc_nL_du = DirichletBC(W.sub(1), (0), boundary_L)
+#    bc_vR_du= DirichletBC(W.sub(0), (0), boundary_R)
+#    bc_vL_du= DirichletBC(W.sub(0), (-36), boundary_L)
+    bcs_du = [bc_nR_du]
     A, b = assemble_system(J, -F, bcs_du)
     
     solve(A, du.vector(), b)
-    
-    
-    
     
     # Conserve memory by reusing vectors for v_h and u_n to keep dv_h and du_n
     dv_h = v_h                  #step to transfer type info to dv_h
@@ -339,15 +361,14 @@ while eps > minimal_error and iters < maxiter:
     u_n = None                  #empty u_n
     
     
-    
-
     #---- Calculate the Error -----------------------
     epsexpr = conditional(lt(r,radius),du_n**2,0.0)
     eps = float(assemble((epsexpr)*dx(mesh)))    
     if math.isnan(eps):
         raise Exception("Residual error is NaN")
     print("EPS is:",eps)
-    # Once we actually converge, we should no longer dampen the newton iterations
+   
+ # Once we actually converge, we should no longer dampen the newton iterations
     if eps < 0.1:
         omega = 1.0
     
@@ -371,45 +392,16 @@ while eps > minimal_error and iters < maxiter:
     vhvec = v_h.vector()
     minval = nvec.min()
     print("minval PRE neg fix:",minval)    
-#    plotting_log(u_n, "Density PRE correction", wait=False)
-   
-    tail = False
-    if tail == True:
-        
-        x = rs_outer
-        y = [u_n(rv) for rv in x]
-        radius = x[-1]
-        radval = 1e-12   
-        for i in range(len(y)):
-            if y[i] <= 1e-10:
-                if i == 0:
-                    radius = 0.0
-                    pass
-                else:
-                    radius = x[i]*3.0/4.0
-                    radval = u_n(radius)
-                    break
-
-        print("RADIUS:",radius)
-
-        if radius == 0.0:        
-            assign(u_n,interpolate(Constant(1), V))
-            
-        elif radius < x[-1]:
-            fitexpr = smoothstep(radius,radius+1.0,r)*radval + (1.0-smoothstep(radius,radius+1.0,r))*conditional(gt(u_n,radval),u_n,radval)
-            conditional(gt(r,radius),1e-10,u_n)
-            fitfunc = project(fitexpr, V)
-            assign(u_n,fitfunc)
-    
-#    plotting_log_keep(u_n, "Density POST correction",wait=False)
     
     elecint = conditional(gt(u_n,0.0),u_n * r * r,0.0)
     intn1 = 4.0*pi*float(assemble((elecint)*dx(mesh)))
     print("Electron count max:",intn1)
 
-    elecint = conditional(lt(r,radius),u_n * r * r,0.0)
-    intn2 = 4.0*pi*float(assemble((elecint)*dx(mesh)))
-    print("Electron count min:",intn2)
+# =============================================================================
+#     elecint = conditional(lt(r,radius),u_n * r * r,0.0)
+#     intn2 = 4.0*pi*float(assemble((elecint)*dx(mesh)))
+#     print("Electron count min:",intn2)
+# =============================================================================
 
     
     if intn1 <= 1e-4:
@@ -419,30 +411,25 @@ while eps > minimal_error and iters < maxiter:
 #    plotting_psi(u_n,"Density PSI",wait=False)    
 #    plotting_psi_keep(v_h,"Hartree potential PSI", wait=False)    
 
-    plotting_sqrt(u_n, "Density Post solver", wait= False)
+#    plotting_sqrt(u_n, "Density Post solver", wait= False)
 #    plotting_sqrt(v_h, "Hartree potential Post solver", wait= False)
 
 #    plotting_normal(u_n, "Density Post solver", wait=False)
 #    plotting_normal(v_h, " Hartree potential Post solver", wait=False)
         
-
+    plotting_log(u_n, "Density Post solver", wait=False)
 #    plotting_log_keep(u_n, "Density POST correction",wait=True)
-#    plotting_log(u_n, "Density Post solver", wait=True)
+#    plotting_log(v_h, "Hartree potential post solver", wait=False)
 #    plotting_log_keep(v_h, "Hartree Potential post solver", wait=True)    
-    
+      
     assign(u_k.sub(1),u_n) 
     assign(u_k.sub(0),v_h)
-    
+            
     print('Check end of loop, iteration: ', iters)
-
-
-
-
-
-
-
-
-#plotting_sqrt(nlast, " Final density") 
+    
+    
+    
+plotting_sqrt(nlast, " Final density") 
 #plotting_psi(nlast, " Final density PSI")
 
 h_to_ev = 27.21138386
@@ -480,32 +467,41 @@ print ("Total energy WITH tail:   % 10.4f"%(total*27.21138386))
 print ("Total (Born-Oppenheimer approx):  % 10.4f"%((ionelec_energy + elecelec_energy + functional_energy)*27.21138386))
 print ("==============================================")
 
-#Error bar on energies
-field2 = conditional(lt(r,radius),nlast,0.0)
-
-ionelec_energy = 4*math.pi*float(assemble(field2*r*r*dx))
-
-#---- Calculate electron-electron interaction energy
-          
-elecelec_energy = 0.5*float(assemble(field2*r*r*dx))
-        
-#---- Calculate functional energy
-
-func_energy_expression = 1.0/8.0*nlast.dx(0)/nlast\
-                         + CF*pow(nlast,(5.0/3.0))\
-                         - CX*pow(nlast,(4.0/3.0))
-
-functional_energy = float(assemble(func_energy_expression*dx))
-#print('check type of the functional energy', type(functional_energy))
-#print('check type of the ionion energy', type(ionion_energy))
-#print('check type of the ionelec energy', type(ionelec_energy))
-#print('check type of the elecelec energy', type(elecelec_energy))
-total = ionion_energy + ionelec_energy + elecelec_energy + functional_energy
-
-
-print ("==============================================")
-print ("Total energy NO tail:   % 10.4f"%(total*27.21138386))
-print ("Total (Born-Oppenheimer approx):  % 10.4f"%((ionelec_energy + elecelec_energy + functional_energy)*27.21138386))
-print ("==============================================")
+# =============================================================================
+# #Error bar on energies
+# field2 = conditional(lt(r,radius),nlast,0.0)
+# 
+# ionelec_energy = 4*math.pi*float(assemble(field2*r*r*dx))
+# 
+# #---- Calculate electron-electron interaction energy
+#           
+# elecelec_energy = 0.5*float(assemble(field2*r*r*dx))
+#         
+# #---- Calculate functional energy
+# 
+# func_energy_expression = 1.0/8.0*nlast.dx(0)/nlast\
+#                          + CF*pow(nlast,(5.0/3.0))\
+#                          - CX*pow(nlast,(4.0/3.0))
+# 
+# functional_energy = float(assemble(func_energy_expression*dx))
+# #print('check type of the functional energy', type(functional_energy))
+# #print('check type of the ionion energy', type(ionion_energy))
+# #print('check type of the ionelec energy', type(ionelec_energy))
+# #print('check type of the elecelec energy', type(elecelec_energy))
+# total = ionion_energy + ionelec_energy + elecelec_energy + functional_energy
+# 
+# 
+# print ("==============================================")
+# print ("Total energy NO tail:   % 10.4f"%(total*27.21138386))
+# print ("Total (Born-Oppenheimer approx):  % 10.4f"%((ionelec_energy + elecelec_energy + functional_energy)*27.21138386))
+# print ("==============================================")
+# 
+# =============================================================================
+# =============================================================================
+# plotting_psi(A1, "Density")
+# plotting_psi_keep(A2, "Density")
+# plotting_psi_keep(A3, "Density")
+# plotting_psi_keep(A4, "Density")
+# =============================================================================
 
 
