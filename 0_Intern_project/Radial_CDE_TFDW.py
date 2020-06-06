@@ -159,7 +159,7 @@ def plotting_log(u,title, wait= False):
     pylab.semilogy(x,y,'bx-')
     #pylab.plot(x,y,'kx-')
     pylab.title(title, fontsize=20)
-    pylab.pause(0.1)
+    pylab.pause(1)
     if wait:
         pylab.waitforbuttonpress()
     pylab.grid()
@@ -193,7 +193,7 @@ def plotting_sqrt(u,title, wait= False):
 ----------------------------------------------------------------------------------------------
 -------------------------------------------------------------------------------------------""" 
 
-rs = np.arange(1e-3, 100.0, 1e-2)
+rs = np.arange(0.01, 25.0, 1e-2)
 radius = rs[-1]
 r_inner = 0.0
 rs_outer = [x for x in rs if x > r_inner]
@@ -254,14 +254,15 @@ ds = Measure("ds", subdomain_data=boundaries)
 Ex = -Z/r
 
 ## ---  Initial density 
-#n_i = Expression('exp(1.0-8.5*x[0]/radius)', degree=2, radius=rs[-1])
-n_i = Expression('exp(1.0-15*x[0]/radius)', degree=2, radius=rs[-1])
+n_i = Expression('exp(1.0-8.5*x[0]/radius)', degree=2, radius=rs[-1])
+#n_i = Expression('exp(1.0-20*x[0]/radius)', degree=2, radius=rs[-1])
 
 #n_i = Constant(1)
 u_n = interpolate(n_i, V)
 
 ## --- Initial Hartree potential 
-v_h = interpolate(Expression('Z/x[0]',Z=Z,degree=2), V)
+#v_h = interpolate(Expression('Z/x[0]',Z=Z,degree=2), V)
+v_h = interpolate(Constant(Z/rs[-1]), V)
 
 
 """-------------------------------------------------------------------------------------------
@@ -283,7 +284,7 @@ assign(u_k.sub(1), u_n)
 
 nlast = Function(V)
 
-"""---------------------------------------------------------------------------"""
+
 ## ------ Tweaking values -------
 #neg_correction = 0.1
 startomega = 0.8
@@ -294,7 +295,7 @@ iters = 0
 maxiter = 1000
 minimal_error = 1E-9
 
-
+  
 
 omega = startomega
 while eps > minimal_error and iters < maxiter:
@@ -306,47 +307,87 @@ while eps > minimal_error and iters < maxiter:
 #    plotting_normal(v_hk, "Hartree potential" )
 #    plotting_log(u_nk, "Density LOG - PRE solver")       
 #    plotting_sqrt(u_nk, 'Density TFDW PRE solver')
-    
+ 
     #---- Setting up functionals -------------------
-    TF = (5.0/3.0)*CF*pow(u_nk**2,1.0/3.0)*pr
-    DIRAC = (-4.0/3.0)*CX*pow(u_nk,(1.0/3.0))*pr
-    #WEIZSACKER = (1.0/8.0*(dot(grad(u_nk),grad(u_nk))/(u_nk**2)*pr+(1.0/4.0*(dot(grad(u_nk),grad(pr)))/u_nk)))
-    WEIZSACKER = (1.0/8.0*(u_nk.dx(0))*u_nk.dx(0)/(u_nk**2)*pr+(1.0/4.0*(u_nk.dx(0))*pr.dx(0))/u_nk)
-    
+
+   # WEIZSACKER = (1.0/8.0*(u_nk.dx(0))*u_nk.dx(0)/(u_nk**2)*pr+(1.0/4.0*(u_nk.dx(0))*pr.dx(0))/u_nk)
+        
+       
+    rtrick = False 
+       
+           
+    if rtrick == True:
+        TF = (5.0/3.0)*CF*pow(u_nk**2,1.0/3.0)*r*pr
+        DIRAC = (-4.0/3.0)*CX*pow(u_nk,(1.0/3.0))*r*pr
+        WEIZSACKER = -(1/4)*u_nk.dx(0)*u_nk/(u_nk**2)*r*pr.dx(0) \
+                     -(1/4)*u_nk.dx(0)*u_nk/(u_nk**2)*pr \
+                     +(1/4)*u_nk.dx(0)*u_nk.dx(0)/(u_nk**2)*r*pr\
+                     +(2/4)*u_nk.dx(0)/u_nk*pr\
+                     +(1/8)*u_nk.dx(0)*u_nk.dx(0)/(u_nk**2)*r*pr 
+                     
+        WEIZSACKER_SURFACE = +(1/4)*u_nk.dx(0)/u_nk*r*pr*ds(2) \
+                             -(1/4)*u_nk.dx(0)/u_nk*r*pr*ds(1)
+   
+    else:   
+        TF = (5.0/3.0)*CF*pow(u_nk**2,1.0/3.0)*pr
+        DIRAC = (-4.0/3.0)*CX*pow(u_nk,(1.0/3.0))*pr
+        WEIZSACKER = -(1/4)*(u_nk.dx(0))/(u_nk)*pr.dx(0)  \
+                     +(1/4)*(u_nk.dx(0))*(u_nk.dx(0))/(u_nk**2)*pr   \
+                     +(2/4)*(u_nk.dx(0))/(u_nk*r)*pr                    \
+                     +(1/8)*(u_nk.dx(0))*(u_nk.dx(0))/(u_nk**2)*pr
+                     
+        WEIZSACKER_SURFACE =  (1/4)*u_nk.dx(0)*pr/u_nk*ds(2) \
+                             -(1/4)*u_nk.dx(0)*pr/u_nk*ds(1) 
+                                      
+
     funcpots = TF + WEIZSACKER + DIRAC
     #funcpots = TF + DIRAC
     #funcpots = TF + WEIZSACKER
     #funcpots = TF 
-     
     
     #---- Solving v_h and u_n ----------------------
-    # rotational transformation of nabla^2 v_h = -4 pi n(r)
+    
     rtrick = True
+    
     if rtrick ==True:
-        F = - r*v_hk.dx(0)*qr.dx(0)*dx    \
-            + r*r*4*math.pi*u_nk*qr*dx          \
-            + (2)*v_hk.dx(0)*qr*dx - r*v_hk.dx(0)*qr*ds(1) + r*v_hk.dx(0)*qr*ds(2)
+        # rotational transformation of nabla^2 v_h = -4 pi n(r)
+        F = - r*v_hk.dx(0)*qr.dx(0)*dx      \
+            + v_hk.dx(0)*qr*dx             \
+            - r*v_hk.dx(0)*qr*ds(1)         \
+            + r*v_hk.dx(0)*qr*ds(2)         \
+            + 4*math.pi*u_nk*r*qr*dx 
+            
+        # Second coupled equation: Ts[n] + Exc[n] + Vext(r) - mu = 0
+        F = F + funcpots*dx \
+            + v_hk*pr*dx        \
+            + Ex*pr*dx          \
+            - Constant(mu)*pr*dx \
+            + WEIZSACKER_SURFACE
 
     else:
+        # rotational transformation of nabla^2 v_h = -4 pi n(r)
         F = - v_hk.dx(0)*qr.dx(0)*dx    \
         + 4*math.pi*u_nk*qr*dx          \
         + (2/r)*v_hk.dx(0)*qr*dx - v_hk.dx(0)*qr*ds(1) + v_hk.dx(0)*qr*ds(2)
+        
+        # Second coupled equation: Ts[n] + Exc[n] + Vext(r) - mu = 0
+        F = F + funcpots*dx \
+            + v_hk*pr*dx        \
+            + Ex*pr*dx          \
+            - Constant(mu)*pr*dx \
+            + WEIZSACKER_SURFACE
              
-    # Second coupled equation: Ts[n] + Exc[n] + Vext(r) - mu = 0
-    F = F + funcpots*dx \
-    + v_hk*pr*dx        \
-    + Ex*pr*dx          \
-    - Constant(mu)*pr*dx
+
 
     #Calculate Jacobian
     J = derivative(F, u_k, du_trial)
     
     #Assemble system
-    bc_nR_du = DirichletBC(W.sub(1), (0), boundary_R)
+#    bc_nR_du = DirichletBC(W.sub(1), (0), boundary_R)
 #    bc_nL_du = DirichletBC(W.sub(1), (0), boundary_L)
-#    bc_vR_du= DirichletBC(W.sub(0), (0), boundary_R)
-#    bc_vL_du= DirichletBC(W.sub(0), (-36), boundary_L)
-    bcs_du = [bc_nR_du]
+    bc_vR_du= DirichletBC(W.sub(0), (0), boundary_R)
+    bc_vL_du= DirichletBC(W.sub(0), (0), boundary_L)
+    bcs_du = [bc_vR_du, bc_vL_du]
     A, b = assemble_system(J, -F, bcs_du)
     
     solve(A, du.vector(), b)
@@ -362,7 +403,7 @@ while eps > minimal_error and iters < maxiter:
     
     
     #---- Calculate the Error -----------------------
-    epsexpr = conditional(lt(r,radius),du_n**2,0.0)
+    epsexpr = du_n**2
     eps = float(assemble((epsexpr)*dx(mesh)))    
     if math.isnan(eps):
         raise Exception("Residual error is NaN")
@@ -418,6 +459,7 @@ while eps > minimal_error and iters < maxiter:
 #    plotting_normal(v_h, " Hartree potential Post solver", wait=False)
         
     plotting_log(u_n, "Density Post solver", wait=False)
+
 #    plotting_log_keep(u_n, "Density POST correction",wait=True)
 #    plotting_log(v_h, "Hartree potential post solver", wait=False)
 #    plotting_log_keep(v_h, "Hartree Potential post solver", wait=True)    
@@ -433,6 +475,8 @@ plotting_sqrt(nlast, " Final density")
 #plotting_psi(nlast, " Final density PSI")
 
 h_to_ev = 27.21138386
+h_to_ev = 1
+
 
 #Born - Oppenheimer approximation.
 ionion_energy = 0.0

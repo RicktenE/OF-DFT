@@ -265,7 +265,7 @@ for i in range(4):
     
     ## --- Initial Hartree potential 
     v_h = interpolate(Expression('Z/x[0]',Z=Z,degree=2), V)
-    
+   # v_h = interpolate(Constant(Z/rs[-1]), V)
     
     """-------------------------------------------------------------------------------------------
     ----------------------------------------------------------------------------------------------
@@ -312,13 +312,7 @@ for i in range(4):
         
         #---- Setting up functionals -------------------
         TF = (5.0/3.0)*CF*pow(u_nk**2,1.0/3.0)*pr
-        DIRAC = (-4.0/3.0)*CX*pow(u_nk,(1.0/3.0))*pr
-        #WEIZSACKER = (1.0/8.0*(dot(grad(u_nk),grad(u_nk))/(u_nk**2)*pr+(1.0/4.0*(dot(grad(u_nk),grad(pr)))/u_nk)))
-        WEIZSACKER = (1.0/8.0*(u_nk.dx(0))*u_nk.dx(0)/(u_nk**2)*pr+(1.0/4.0*(u_nk.dx(0))*pr.dx(0))/u_nk)
-        
-        #funcpots = TF + WEIZSACKER + DIRAC
-        #funcpots = TF + DIRAC
-        #funcpots = TF + WEIZSACKER
+
         funcpots = TF 
          
         
@@ -326,14 +320,17 @@ for i in range(4):
         # rotational transformation of nabla^2 v_h = -4 pi n(r)
         rtrick = False
         if rtrick ==True:
-            F = - r*v_hk.dx(0)*qr.dx(0)*dx    \
-                + r*r*4*math.pi*u_nk*qr*dx          \
-                + (2)*v_hk.dx(0)*qr*dx - r*v_hk.dx(0)*qr*ds(1) + r*v_hk.dx(0)*qr*ds(2)
-                #extra r found emperically
+            F = - r*v_hk.dx(0)*qr.dx(0)*dx      \
+                + v_hk.dx(0)*qr*dx             \
+                - r*v_hk.dx(0)*qr*ds(1)         \
+                + r*v_hk.dx(0)*qr*ds(2)         \
+                + 4*math.pi*u_nk*r*qr*dx  
         else:
-            F = - v_hk.dx(0)*qr.dx(0)*dx    \
-            + 4*math.pi*u_nk*qr*dx          \
-            + (2/r)*v_hk.dx(0)*qr*dx - v_hk.dx(0)*qr*ds(1) + v_hk.dx(0)*qr*ds(2)
+            F = - v_hk.dx(0)*qr.dx(0)*dx         \
+                + (2/r)*v_hk.dx(0)*qr*dx         \
+                - v_hk.dx(0)*qr*ds(1)           \
+                + v_hk.dx(0)*qr*ds(2)           \
+                + 4*math.pi*u_nk*qr*dx
                  
         # Second coupled equation: Ts[n] + Exc[n] + Vext(r) - mu = 0
         F = F + funcpots*dx \
@@ -437,12 +434,12 @@ for i in range(4):
     nr = project(Z/(4.0*pi)*gr.dx(0)/r,V)
     if i == 0:
         plotting_psi(psi, "Density",False)
-        print("q=",gr(rs[0]), " Iteration_= ",i)  #most accurate negative slope around rs[8]
+        print("q=",gr(rs[8]), " Iteration_= ",i)  #most accurate negative slope around rs[8]
         #print("q=",gr(rs[-1])*rs[-1], " Iteration__= ",i)
         
     else:
         plotting_psi_keep(psi, "Density",False)
-        print("q=",gr(rs[0]), " Iteration = ",i)  #most accurate negative slope around rs[8]
+        print("q=",gr(rs[8]), " Iteration = ",i)  #most accurate negative slope around rs[8]
         #print("q=",gr(rs[-1])*rs[-1], " Iteration= ",i)
 
 
@@ -450,6 +447,7 @@ for i in range(4):
 #plotting_psi(nlast, " Final density PSI")
 
 h_to_ev = 27.21138386
+h_to_ev = 1
 
 #Born - Oppenheimer approximation.
 ionion_energy = 0.0
@@ -480,38 +478,40 @@ print ("Ion-elec:       % 10.4f"%(ionelec_energy*h_to_ev))
 print ("Elec-elec (Eh): % 10.4f"%(elecelec_energy*h_to_ev))
 print ("Functional:     % 10.4f"%(functional_energy*h_to_ev))
 print ("==============================================")
-print ("Total energy WITH tail:   % 10.4f"%(total*27.21138386))
+print ("Total energy WITH tail:   % 10.4f"%(total*h_to_ev))
 print ("Total (Born-Oppenheimer approx):  % 10.4f"%((ionelec_energy + elecelec_energy + functional_energy)*27.21138386))
 print ("==============================================")
 
-#Error bar on energies
-field2 = conditional(lt(r,radius),nlast,0.0)
-
-ionelec_energy = 4*math.pi*float(assemble(field2*r*r*dx))
-
-#---- Calculate electron-electron interaction energy
-          
-elecelec_energy = 0.5*float(assemble(field2*r*r*dx))
-        
-#---- Calculate functional energy
-
-func_energy_expression = 1.0/8.0*nlast.dx(0)/nlast\
-                         + CF*pow(nlast,(5.0/3.0))\
-                         - CX*pow(nlast,(4.0/3.0))
-
-functional_energy = float(assemble(func_energy_expression*dx))
-#print('check type of the functional energy', type(functional_energy))
-#print('check type of the ionion energy', type(ionion_energy))
-#print('check type of the ionelec energy', type(ionelec_energy))
-#print('check type of the elecelec energy', type(elecelec_energy))
-total = ionion_energy + ionelec_energy + elecelec_energy + functional_energy
-
-
-print ("==============================================")
-print ("Total energy NO tail:   % 10.4f"%(total*27.21138386))
-print ("Total (Born-Oppenheimer approx):  % 10.4f"%((ionelec_energy + elecelec_energy + functional_energy)*27.21138386))
-print ("==============================================")
-
+# =============================================================================
+# #Error bar on energies
+# field2 = conditional(lt(r,radius),nlast,0.0)
+# 
+# ionelec_energy = 4*math.pi*float(assemble(field2*r*r*dx))
+# 
+# #---- Calculate electron-electron interaction energy
+#           
+# elecelec_energy = 0.5*float(assemble(field2*r*r*dx))
+#         
+# #---- Calculate functional energy
+# 
+# func_energy_expression = 1.0/8.0*nlast.dx(0)/nlast\
+#                          + CF*pow(nlast,(5.0/3.0))\
+#                          - CX*pow(nlast,(4.0/3.0))
+# 
+# functional_energy = float(assemble(func_energy_expression*dx))
+# #print('check type of the functional energy', type(functional_energy))
+# #print('check type of the ionion energy', type(ionion_energy))
+# #print('check type of the ionelec energy', type(ionelec_energy))
+# #print('check type of the elecelec energy', type(elecelec_energy))
+# total = ionion_energy + ionelec_energy + elecelec_energy + functional_energy
+# 
+# 
+# print ("==============================================")
+# print ("Total energy NO tail:   % 10.4f"%(total*h_to_ev))
+# print ("Total (Born-Oppenheimer approx):  % 10.4f"%((ionelec_energy + elecelec_energy + functional_energy)*27.21138386))
+# print ("==============================================")
+# 
+# =============================================================================
 # =============================================================================
 # plotting_psi(A1, "Density")
 # plotting_psi_keep(A2, "Density")
