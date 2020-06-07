@@ -193,7 +193,7 @@ def plotting_sqrt(u,title, wait= False):
 ----------------------------------------------------------------------------------------------
 -------------------------------------------------------------------------------------------""" 
 
-rs = np.arange(0.01, 25.0, 1e-2)
+rs = np.arange(1e-0, 10.0, 1e-2)
 radius = rs[-1]
 r_inner = 0.0
 rs_outer = [x for x in rs if x > r_inner]
@@ -313,20 +313,20 @@ while eps > minimal_error and iters < maxiter:
    # WEIZSACKER = (1.0/8.0*(u_nk.dx(0))*u_nk.dx(0)/(u_nk**2)*pr+(1.0/4.0*(u_nk.dx(0))*pr.dx(0))/u_nk)
         
        
-    rtrick = False 
+    rtrick = True 
        
            
     if rtrick == True:
         TF = (5.0/3.0)*CF*pow(u_nk**2,1.0/3.0)*r*pr
         DIRAC = (-4.0/3.0)*CX*pow(u_nk,(1.0/3.0))*r*pr
-        WEIZSACKER = -(1/4)*u_nk.dx(0)*u_nk/(u_nk**2)*r*pr.dx(0) \
-                     -(1/4)*u_nk.dx(0)*u_nk/(u_nk**2)*pr \
-                     +(1/4)*u_nk.dx(0)*u_nk.dx(0)/(u_nk**2)*r*pr\
-                     +(2/4)*u_nk.dx(0)/u_nk*pr\
+        WEIZSACKER = +(1/4)*u_nk.dx(0)*u_nk/(u_nk**2)*r*pr.dx(0) \
+                     +(1/4)*u_nk.dx(0)*u_nk/(u_nk**2)*pr \
+                     -(1/4)*u_nk.dx(0)*u_nk.dx(0)/(u_nk**2)*r*pr\
+                     -(2/4)*u_nk.dx(0)/u_nk*pr\
                      +(1/8)*u_nk.dx(0)*u_nk.dx(0)/(u_nk**2)*r*pr 
                      
-        WEIZSACKER_SURFACE = +(1/4)*u_nk.dx(0)/u_nk*r*pr*ds(2) \
-                             -(1/4)*u_nk.dx(0)/u_nk*r*pr*ds(1)
+        WEIZSACKER_SURFACE = -(1/4)*u_nk.dx(0)/u_nk*r*pr*ds(2) \
+                             +(1/4)*u_nk.dx(0)/u_nk*r*pr*ds(1)
    
     else:   
         TF = (5.0/3.0)*CF*pow(u_nk**2,1.0/3.0)*pr
@@ -346,8 +346,6 @@ while eps > minimal_error and iters < maxiter:
     #funcpots = TF 
     
     #---- Solving v_h and u_n ----------------------
-    
-    rtrick = True
     
     if rtrick ==True:
         # rotational transformation of nabla^2 v_h = -4 pi n(r)
@@ -387,7 +385,9 @@ while eps > minimal_error and iters < maxiter:
 #    bc_nL_du = DirichletBC(W.sub(1), (0), boundary_L)
     bc_vR_du= DirichletBC(W.sub(0), (0), boundary_R)
     bc_vL_du= DirichletBC(W.sub(0), (0), boundary_L)
-    bcs_du = [bc_vR_du, bc_vL_du]
+   # bcs_du = [bc_vR_du, bc_vL_du]
+   # bcs_du = []
+    bcs_du = [bc_vR_du]
     A, b = assemble_system(J, -F, bcs_du)
     
     solve(A, du.vector(), b)
