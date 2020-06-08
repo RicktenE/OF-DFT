@@ -318,25 +318,34 @@ for i in range(4):
         
         #---- Solving v_h and u_n ----------------------
         # rotational transformation of nabla^2 v_h = -4 pi n(r)
-        rtrick = False
+        rtrick = True
         if rtrick ==True:
             F = - r*v_hk.dx(0)*qr.dx(0)*dx      \
                 + v_hk.dx(0)*qr*dx             \
                 - r*v_hk.dx(0)*qr*ds(1)         \
                 + r*v_hk.dx(0)*qr*ds(2)         \
                 + 4*math.pi*u_nk*r*qr*dx  
+                
+                # Second coupled equation: Ts[n] + Exc[n] + Vext(r) - mu = 0
+            F = F + funcpots*r*dx \
+                + v_hk*r*pr*dx        \
+                + Ex*r*pr*dx          \
+                - Constant(mu)*r*pr*dx
+                
         else:
             F = - v_hk.dx(0)*qr.dx(0)*dx         \
                 + (2/r)*v_hk.dx(0)*qr*dx         \
                 - v_hk.dx(0)*qr*ds(1)           \
                 + v_hk.dx(0)*qr*ds(2)           \
                 + 4*math.pi*u_nk*qr*dx
+                
+                # Second coupled equation: Ts[n] + Exc[n] + Vext(r) - mu = 0
+            F = F + funcpots*dx \
+                + v_hk*pr*dx        \
+                + Ex*pr*dx          \
+                - Constant(mu)*pr*dx
                  
-        # Second coupled equation: Ts[n] + Exc[n] + Vext(r) - mu = 0
-        F = F + funcpots*dx \
-        + v_hk*pr*dx        \
-        + Ex*pr*dx          \
-        - Constant(mu)*pr*dx
+
     
         #Calculate Jacobian
         J = derivative(F, u_k, du_trial)

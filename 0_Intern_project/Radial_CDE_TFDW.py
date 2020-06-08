@@ -173,8 +173,8 @@ def plotting_sqrt(u,title, wait= False):
     rplot = mesh.coordinates()
     x = np.sqrt(rplot)
     y = [v*sqrt(u(v)) for v in rplot] 
-#    pylab.xlim(0, 3)
-#    pylab.ylim(0, 2.1)
+    pylab.xlim(0, 3)
+    pylab.ylim(0, 2.1)
     
     pylab.plot(x,y,'kx-')
     pylab.title(title, fontsize=20)
@@ -193,7 +193,7 @@ def plotting_sqrt(u,title, wait= False):
 ----------------------------------------------------------------------------------------------
 -------------------------------------------------------------------------------------------""" 
 
-rs = np.arange(0, 50.0, 1e-2)
+rs = np.arange(0, 100.0, 1e-2)
 radius = rs[-1]
 r_inner = 0.0
 rs_outer = [x for x in rs if x > r_inner]
@@ -255,7 +255,7 @@ Ex = -Z/r
 
 ## ---  Initial density 
 #n_i = Expression('exp(1.0-8.5*x[0]/radius)', degree=2, radius=rs[-1])
-n_i = Expression('exp(1.0-100*x[0]/radius)', degree=2, radius=rs[-1])
+n_i = Expression('exp(1.0-200*x[0]/radius)', degree=2, radius=rs[-1])
 
 #n_i = Constant(1)
 u_n = interpolate(n_i, V)
@@ -288,7 +288,7 @@ nlast = Function(V)
 ## ------ Tweaking values -------
 #neg_correction = 0.1
 startomega = 0.8
-mu = 0
+mu = -0.2082
 
 eps = 1
 iters = 0
