@@ -290,7 +290,7 @@ for i in range(4):
     ## ------ Tweaking values -------
     #neg_correction = 0.1
     startomega = 0.8
-    mu = 0
+    mu = 0.0
     
     eps = 1
     iters = 0

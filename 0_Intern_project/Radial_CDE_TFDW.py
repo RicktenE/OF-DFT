@@ -193,7 +193,8 @@ def plotting_sqrt(u,title, wait= False):
 ----------------------------------------------------------------------------------------------
 -------------------------------------------------------------------------------------------""" 
 
-rs = np.arange(0, 100.0, 1e-2)
+rs = np.arange(0, 10.0, 1e-3)
+#rs = 
 radius = rs[-1]
 r_inner = 0.0
 rs_outer = [x for x in rs if x > r_inner]
@@ -289,6 +290,7 @@ nlast = Function(V)
 #neg_correction = 0.1
 startomega = 0.8
 mu = -0.2082
+#mu=0.0
 
 eps = 1
 iters = 0
@@ -324,8 +326,8 @@ while eps > minimal_error and iters < maxiter:
                      -(1/8)*u_nk.dx(0)*u_nk.dx(0)/(u_nk**2)*r*pr\
                      -(2/4)*u_nk.dx(0)/u_nk*pr
                      
-        WEIZSACKER_SURFACE = (1/4)*u_nk.dx(0)/u_nk*r*pr*ds(2) \
-                             -(1/4)*u_nk.dx(0)/u_nk*r*pr*ds(1)
+        WEIZSACKER_SURFACE = -(1/4)*u_nk.dx(0)/u_nk*r*pr*ds(2) \
+                             +(1/4)*u_nk.dx(0)/u_nk*r*pr*ds(1)
    
     else:   
         TF = (5.0/3.0)*CF*pow(u_nk**2,1.0/3.0)*pr
@@ -335,8 +337,8 @@ while eps > minimal_error and iters < maxiter:
                      -(2/4)*(u_nk.dx(0))/(u_nk*r)*pr                    \
                      +(1/8)*(u_nk.dx(0))*(u_nk.dx(0))/(u_nk**2)*pr
                      
-        WEIZSACKER_SURFACE =  (1/4)*u_nk.dx(0)*pr/u_nk*ds(2) \
-                             -(1/4)*u_nk.dx(0)*pr/u_nk*ds(1) 
+        WEIZSACKER_SURFACE = -(1/4)*u_nk.dx(0)*pr/u_nk*ds(2) \
+                             +(1/4)*u_nk.dx(0)*pr/u_nk*ds(1) 
                                       
 
     funcpots = TF + WEIZSACKER + DIRAC
