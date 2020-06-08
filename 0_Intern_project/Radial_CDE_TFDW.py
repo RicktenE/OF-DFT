@@ -193,7 +193,7 @@ def plotting_sqrt(u,title, wait= False):
 ----------------------------------------------------------------------------------------------
 -------------------------------------------------------------------------------------------""" 
 
-rs = np.arange(1e-0, 10.0, 1e-2)
+rs = np.arange(0, 50.0, 1e-2)
 radius = rs[-1]
 r_inner = 0.0
 rs_outer = [x for x in rs if x > r_inner]
@@ -254,8 +254,8 @@ ds = Measure("ds", subdomain_data=boundaries)
 Ex = -Z/r
 
 ## ---  Initial density 
-n_i = Expression('exp(1.0-8.5*x[0]/radius)', degree=2, radius=rs[-1])
-#n_i = Expression('exp(1.0-20*x[0]/radius)', degree=2, radius=rs[-1])
+#n_i = Expression('exp(1.0-8.5*x[0]/radius)', degree=2, radius=rs[-1])
+n_i = Expression('exp(1.0-100*x[0]/radius)', degree=2, radius=rs[-1])
 
 #n_i = Constant(1)
 u_n = interpolate(n_i, V)
@@ -321,19 +321,18 @@ while eps > minimal_error and iters < maxiter:
         DIRAC = (-4.0/3.0)*CX*pow(u_nk,(1.0/3.0))*r*pr
         WEIZSACKER = +(1/4)*u_nk.dx(0)*u_nk/(u_nk**2)*r*pr.dx(0) \
                      +(1/4)*u_nk.dx(0)*u_nk/(u_nk**2)*pr \
-                     -(1/4)*u_nk.dx(0)*u_nk.dx(0)/(u_nk**2)*r*pr\
-                     -(2/4)*u_nk.dx(0)/u_nk*pr\
-                     +(1/8)*u_nk.dx(0)*u_nk.dx(0)/(u_nk**2)*r*pr 
+                     -(1/8)*u_nk.dx(0)*u_nk.dx(0)/(u_nk**2)*r*pr\
+                     -(2/4)*u_nk.dx(0)/u_nk*pr
                      
-        WEIZSACKER_SURFACE = -(1/4)*u_nk.dx(0)/u_nk*r*pr*ds(2) \
-                             +(1/4)*u_nk.dx(0)/u_nk*r*pr*ds(1)
+        WEIZSACKER_SURFACE = (1/4)*u_nk.dx(0)/u_nk*r*pr*ds(2) \
+                             -(1/4)*u_nk.dx(0)/u_nk*r*pr*ds(1)
    
     else:   
         TF = (5.0/3.0)*CF*pow(u_nk**2,1.0/3.0)*pr
         DIRAC = (-4.0/3.0)*CX*pow(u_nk,(1.0/3.0))*pr
-        WEIZSACKER = -(1/4)*(u_nk.dx(0))/(u_nk)*pr.dx(0)  \
-                     +(1/4)*(u_nk.dx(0))*(u_nk.dx(0))/(u_nk**2)*pr   \
-                     +(2/4)*(u_nk.dx(0))/(u_nk*r)*pr                    \
+        WEIZSACKER = +(1/4)*(u_nk.dx(0))/(u_nk)*pr.dx(0)  \
+                     -(1/4)*(u_nk.dx(0))*(u_nk.dx(0))/(u_nk**2)*pr   \
+                     -(2/4)*(u_nk.dx(0))/(u_nk*r)*pr                    \
                      +(1/8)*(u_nk.dx(0))*(u_nk.dx(0))/(u_nk**2)*pr
                      
         WEIZSACKER_SURFACE =  (1/4)*u_nk.dx(0)*pr/u_nk*ds(2) \
@@ -357,9 +356,9 @@ while eps > minimal_error and iters < maxiter:
             
         # Second coupled equation: Ts[n] + Exc[n] + Vext(r) - mu = 0
         F = F + funcpots*dx \
-            + v_hk*pr*dx        \
-            + Ex*pr*dx          \
-            - Constant(mu)*pr*dx \
+            + v_hk*r*pr*dx        \
+            + Ex*r*pr*dx          \
+            - Constant(mu)*r*pr*dx \
             + WEIZSACKER_SURFACE
 
     else:
@@ -507,7 +506,7 @@ print ("Ion-elec:       % 10.4f"%(ionelec_energy*h_to_ev))
 print ("Elec-elec (Eh): % 10.4f"%(elecelec_energy*h_to_ev))
 print ("Functional:     % 10.4f"%(functional_energy*h_to_ev))
 print ("==============================================")
-print ("Total energy WITH tail:   % 10.4f"%(total*27.21138386))
+print ("Total energy tail:   % 10.4f"%(total*h_to_ev))
 print ("Total (Born-Oppenheimer approx):  % 10.4f"%((ionelec_energy + elecelec_energy + functional_energy)*27.21138386))
 print ("==============================================")
 
