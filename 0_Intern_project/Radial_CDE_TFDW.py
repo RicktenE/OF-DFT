@@ -193,7 +193,7 @@ def plotting_sqrt(u,title, wait= False):
 ----------------------------------------------------------------------------------------------
 -------------------------------------------------------------------------------------------""" 
 
-rs = np.arange(0, 10.0, 1e-3)
+rs = np.arange(0, 100.0, 1e-2)
 #rs = 
 radius = rs[-1]
 r_inner = 0.0
@@ -322,9 +322,9 @@ while eps > minimal_error and iters < maxiter:
         TF = (5.0/3.0)*CF*pow(u_nk**2,1.0/3.0)*r*pr
         DIRAC = (-4.0/3.0)*CX*pow(u_nk,(1.0/3.0))*r*pr
         WEIZSACKER = +(1/4)*u_nk.dx(0)*u_nk/(u_nk**2)*r*pr.dx(0) \
-                     +(1/4)*u_nk.dx(0)*u_nk/(u_nk**2)*pr \
-                     -(1/8)*u_nk.dx(0)*u_nk.dx(0)/(u_nk**2)*r*pr\
-                     -(2/4)*u_nk.dx(0)/u_nk*pr
+                     -(1/4)*u_nk.dx(0)*u_nk/(u_nk**2)*pr \
+                     -(1/8)*u_nk.dx(0)*u_nk.dx(0)/(u_nk**2)*r*pr
+                     
                      
         WEIZSACKER_SURFACE = -(1/4)*u_nk.dx(0)/u_nk*r*pr*ds(2) \
                              +(1/4)*u_nk.dx(0)/u_nk*r*pr*ds(1)
