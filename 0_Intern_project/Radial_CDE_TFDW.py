@@ -36,7 +36,7 @@ plt.close('all')
 #Z = Constant(36) # Krypton
 #N = Z 		  # Neutral 
 
-Z = Constant(2)
+Z = Constant(36)
 N=Z
 
 a_0 = 1 # Hatree units
@@ -196,8 +196,8 @@ def plotting_sqrt(u,title, wait= False):
 ----------------------------------------------------------------------------------------------
 -------------------------------------------------------------------------------------------""" 
 
-rs = np.arange(0, 50.0, 1e-2)
-#rs = 
+rs = np.arange(0, 100.0, 1e-3)
+
 radius = rs[-1]
 r_inner = 0.0
 rs_outer = [x for x in rs if x > r_inner]
@@ -477,7 +477,7 @@ while eps > minimal_error and iters < maxiter:
     
     
     
-plotting_sqrt(nlast, " Final density") 
+plotting_sqrt(nlast, " ") 
 #plotting_psi(nlast, " Final density PSI")
 
 #h_to_ev = 27.21138386
