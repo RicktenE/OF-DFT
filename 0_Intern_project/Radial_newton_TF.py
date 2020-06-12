@@ -140,7 +140,7 @@ for i in range(4):
         #Redifine trial function and derivative of function
         F  = -psi_k.dx(0)*v.dx(0)*dx - psi_k**(3/2)/x**(1/2)*v*dx + psi_k.dx(0)*v*ds(0)
         J = derivative(F, psi_k, du_)
-        plotting(psi_k,'Density - PSI')
+    #    plotting(psi_k,'Density - PSI')
     
         A, b = assemble_system(J, -F, bcs_du)
         solve(A, du.vector(), b)

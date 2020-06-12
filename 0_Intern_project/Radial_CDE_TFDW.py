@@ -33,8 +33,11 @@ plt.close('all')
 #N = Z 		  # Neutral
 
 #Element Kr
-Z = Constant(36) # Krypton
-N = Z 		  # Neutral 
+#Z = Constant(36) # Krypton
+#N = Z 		  # Neutral 
+
+Z = Constant(2)
+N=Z
 
 a_0 = 1 # Hatree units
 Alpha = (4/a_0)*(2*Z/(9*pi**2))**(1/3)
@@ -193,7 +196,7 @@ def plotting_sqrt(u,title, wait= False):
 ----------------------------------------------------------------------------------------------
 -------------------------------------------------------------------------------------------""" 
 
-rs = np.arange(0, 100.0, 1e-2)
+rs = np.arange(0, 50.0, 1e-2)
 #rs = 
 radius = rs[-1]
 r_inner = 0.0
@@ -289,8 +292,10 @@ nlast = Function(V)
 ## ------ Tweaking values -------
 #neg_correction = 0.1
 startomega = 0.8
-mu = -0.2082
-#mu=0.0
+#mu = -0.2082
+#mu= - 0.1
+#mu = 0
+mu = -1/5
 
 eps = 1
 iters = 0
@@ -316,7 +321,7 @@ while eps > minimal_error and iters < maxiter:
         
        
     rtrick = True 
-       
+    lamb = 1/1
            
     if rtrick == True:
         TF = (5.0/3.0)*CF*pow(u_nk**2,1.0/3.0)*r*pr
@@ -341,7 +346,7 @@ while eps > minimal_error and iters < maxiter:
                              +(1/4)*u_nk.dx(0)*pr/u_nk*ds(1) 
                                       
 
-    funcpots = TF + WEIZSACKER + DIRAC
+    funcpots = TF + lamb*WEIZSACKER + DIRAC
     #funcpots = TF + DIRAC
     #funcpots = TF + WEIZSACKER
     #funcpots = TF 
@@ -361,7 +366,7 @@ while eps > minimal_error and iters < maxiter:
             + v_hk*r*pr*dx        \
             + Ex*r*pr*dx          \
             - Constant(mu)*r*pr*dx \
-            + WEIZSACKER_SURFACE
+            + lamb*WEIZSACKER_SURFACE
 
     else:
         # rotational transformation of nabla^2 v_h = -4 pi n(r)
@@ -374,7 +379,7 @@ while eps > minimal_error and iters < maxiter:
             + v_hk*pr*dx        \
             + Ex*pr*dx          \
             - Constant(mu)*pr*dx \
-            + WEIZSACKER_SURFACE
+            + lamb*WEIZSACKER_SURFACE
              
 
 
@@ -475,26 +480,28 @@ while eps > minimal_error and iters < maxiter:
 plotting_sqrt(nlast, " Final density") 
 #plotting_psi(nlast, " Final density PSI")
 
-h_to_ev = 27.21138386
+#h_to_ev = 27.21138386
 h_to_ev = 1
 
 
 #Born - Oppenheimer approximation.
 ionion_energy = 0.0
 
-ionelec_energy = 4*math.pi*float(assemble(nlast*r*r*dx))
+ionelec_energy = 4*math.pi*float(assemble(nlast*(-Z)*r*dx))
 
 #---- Calculate electron-electron interaction energy
           
-elecelec_energy = 0.5*float(assemble(nlast*r*r*dx))
+elecelec_energy = math.pi*2.0*float(assemble(v_h*nlast*r*r*dx))
         
 #---- Calculate functional energy
 
-func_energy_expression = 1.0/8.0*nlast.dx(0)/nlast\
-                         + CF*pow(nlast,(5.0/3.0))\
-                         - CX*pow(nlast,(4.0/3.0))
-
-functional_energy = float(assemble(func_energy_expression*dx))
+func_energy_expression = + CF*pow(nlast,(5.0/3.0))\
+                         - CX*pow(nlast,(4.0/3.0))\
+                         + lamb/8.0*pow(nlast.dx(0),2)/nlast
+                         
+                        
+                         
+functional_energy = 4*math.pi*float(assemble(func_energy_expression*r*r*dx))
 #print('check type of the functional energy', type(functional_energy))
 #print('check type of the ionion energy', type(ionion_energy))
 #print('check type of the ionelec energy', type(ionelec_energy))
@@ -509,7 +516,7 @@ print ("Elec-elec (Eh): % 10.4f"%(elecelec_energy*h_to_ev))
 print ("Functional:     % 10.4f"%(functional_energy*h_to_ev))
 print ("==============================================")
 print ("Total energy tail:   % 10.4f"%(total*h_to_ev))
-print ("Total (Born-Oppenheimer approx):  % 10.4f"%((ionelec_energy + elecelec_energy + functional_energy)*27.21138386))
+print ("Total (Born-Oppenheimer approx):  % 10.4f"%((ionelec_energy + elecelec_energy + functional_energy)*h_to_ev))
 print ("==============================================")
 
 # =============================================================================
@@ -540,13 +547,4 @@ print ("==============================================")
 # print ("Total energy NO tail:   % 10.4f"%(total*27.21138386))
 # print ("Total (Born-Oppenheimer approx):  % 10.4f"%((ionelec_energy + elecelec_energy + functional_energy)*27.21138386))
 # print ("==============================================")
-# 
-# =============================================================================
-# =============================================================================
-# plotting_psi(A1, "Density")
-# plotting_psi_keep(A2, "Density")
-# plotting_psi_keep(A3, "Density")
-# plotting_psi_keep(A4, "Density")
-# =============================================================================
-
 

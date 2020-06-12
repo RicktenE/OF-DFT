@@ -459,23 +459,26 @@ for i in range(4):
 
 h_to_ev = 27.21138386
 h_to_ev = 1
+lamb =1/1
 
 #Born - Oppenheimer approximation.
 ionion_energy = 0.0
 
-ionelec_energy = 4*math.pi*float(assemble(nlast*r*r*dx))
+ionelec_energy = 4*math.pi*float(assemble(nlast*(-Z)*r*dx))
 
 #---- Calculate electron-electron interaction energy
           
-elecelec_energy = 0.5*float(assemble(nlast*r*r*dx))
+elecelec_energy = math.pi*2.0*float(assemble(v_h*nlast*r*r*dx))
         
 #---- Calculate functional energy
 
-func_energy_expression = 1.0/8.0*nlast.dx(0)/nlast\
-                         + CF*pow(nlast,(5.0/3.0))\
-                         - CX*pow(nlast,(4.0/3.0))
-
-functional_energy = float(assemble(func_energy_expression*dx))
+func_energy_expression = + CF*pow(nlast,(5.0/3.0))
+                         
+                        
+                         
+                        
+                         
+functional_energy = 4*math.pi*float(assemble(func_energy_expression*r*r*dx))
 #print('check type of the functional energy', type(functional_energy))
 #print('check type of the ionion energy', type(ionion_energy))
 #print('check type of the ionelec energy', type(ionelec_energy))
@@ -489,10 +492,9 @@ print ("Ion-elec:       % 10.4f"%(ionelec_energy*h_to_ev))
 print ("Elec-elec (Eh): % 10.4f"%(elecelec_energy*h_to_ev))
 print ("Functional:     % 10.4f"%(functional_energy*h_to_ev))
 print ("==============================================")
-print ("Total energy WITH tail:   % 10.4f"%(total*h_to_ev))
-print ("Total (Born-Oppenheimer approx):  % 10.4f"%((ionelec_energy + elecelec_energy + functional_energy)*27.21138386))
+print ("Total energy tail:   % 10.4f"%(total*h_to_ev))
+print ("Total (Born-Oppenheimer approx):  % 10.4f"%((ionelec_energy + elecelec_energy + functional_energy)*h_to_ev))
 print ("==============================================")
-
 # =============================================================================
 # #Error bar on energies
 # field2 = conditional(lt(r,radius),nlast,0.0)
