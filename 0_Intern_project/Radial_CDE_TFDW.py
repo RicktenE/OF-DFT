@@ -196,7 +196,7 @@ def plotting_sqrt(u,title, wait= False):
 ----------------------------------------------------------------------------------------------
 -------------------------------------------------------------------------------------------""" 
 
-rs = np.arange(0, 100.0, 1e-3)
+rs = np.arange(0, 100.0, 1e-2)
 
 radius = rs[-1]
 r_inner = 0.0
@@ -440,6 +440,35 @@ while eps > minimal_error and iters < maxiter:
     minval = nvec.min()
     print("minval PRE neg fix:",minval)    
     
+# =============================================================================
+#     plotting_log(u_n, "Density PRE correction", wait=True)
+# 
+#     x = rs_outer
+#     y = [u_n(rv) for rv in x]
+#     radius = x[-1]
+#     radval = 1e-12   
+#     for i in range(len(y)):
+#         if y[i] <= 1e-10:
+#             if i == 0:
+#                 radius = 0.0
+#                 pass
+#             else:
+#                 radius = x[i]*3.0/4.0
+#                 radval = u_n(radius)
+#                 break
+# 
+#     print("RADIUS:",radius)
+# 
+#     if radius == 0.0:        
+#         assign(u_n,interpolate(Constant(1), V))
+# 
+#     elif radius < x[-1]:
+#         fitexpr = smoothstep(radius,radius+1.0,r)*radval + (1.0-smoothstep(radius,radius+1.0,r))*conditional(gt(u_n,radval),u_n,radval)
+#         conditional(gt(r,radius),1e-10,u_n)
+#         fitfunc = project(fitexpr, V)
+#         assign(u_n,fitfunc)
+# =============================================================================
+    
     elecint = conditional(gt(u_n,0.0),u_n * r * r,0.0)
     intn1 = 4.0*pi*float(assemble((elecint)*dx(mesh)))
     print("Electron count max:",intn1)
@@ -548,3 +577,45 @@ print ("==============================================")
 # print ("Total (Born-Oppenheimer approx):  % 10.4f"%((ionelec_energy + elecelec_energy + functional_energy)*27.21138386))
 # print ("==============================================")
 
+# =============================================================================
+#     # correct for possible negative mu
+#     u_i = project(Constant(mu) -Ex - u_nk,V)
+#     minval = u_i.vector().min()
+#     if minval < 0.0:
+#         mu-=minval-1e-14
+#     u_i = project(Constant(mu) -Ex - u_nk,V)
+#     print("MINIMUM VALUE",u_i.vector().min())
+# =============================================================================
+
+# =============================================================================
+# #---- Ad hoc negative density fix -------
+#     rvec = mesh.coordinates()
+#     nvec = np.array([u_n(v) for v in rvec])
+#     minval = nvec.min()
+#     neg_correction = 0.01
+#     
+#     print("Going to add:", -1*minval+neg_correction)
+#     if minval < 0.0:
+#         u_n.vector()[:]= u_n.vector()[:]-minval+neg_correction
+#         
+#         assign(u_k.sub(1),u_n)
+#     else:
+#         assign(u_k.sub(1),u_n)
+# =============================================================================
+
+# =============================================================================
+#     nvec = u_n.vector()
+#     nvec[nvec<0.1]=0.1
+#     rvec = mesh.coordinates()
+#     nvec = np.array([u_n(v) for v in rvec])
+#     minval = nvec.min()
+#     print("u_n minimum from array:",minval)
+#        
+#     nvec[nvec<0.0]=0.0001
+# 
+#     minval = nvec.min()
+#     print("minval POST neg fix",minval)
+#     
+#     assign(u_k.sub(1),u_n)
+#     assign(u_k.sub(1),u_n)    
+# =============================================================================
